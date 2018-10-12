@@ -28,11 +28,11 @@ According to http://wiki.ros.org/ur10_moveit_config
 
 ## Run Demo Script
 
-#### Run On Rviz
+#### 1) Run On Rviz
 Robot’s config file
 `roslaunch ur10_rmf ur10_test.launch` or default `roslaunch ur10_moveit_config demo.launch`
 
-Motion Planning Python Script
+#### 2) Motion Planning Python Script
 > rosrun ur10_rmf python_moveit2.py
 
 
@@ -40,24 +40,30 @@ Motion Planning Python Script
 - uncomment `joint_state_publisher` node in `ur10_test.launch` will enable rviz ur10 to run without UR10 hardware 
 - Change planning between: STOMP, CHOMP, OMPL
 - If select STOMP planner, build package from industrial moveit: `https://github.com/ros-industrial/industrial_moveit`
-
+- Edit `enable_gripper` to 0 to disable pub sub to gripper's topic
 
 ## Run On UR10 Robot hardware
 #### Config on UR10 GUI
 config IP, create IP for UR10 in ubuntu connection, different port num, e.g: 192.168.88.222
 Then Try to ping the connection 192.168.88.70 (robot’s)
 
-#### Bring up connection between PC and UR10
+#### 1) Bring up connection between PC and UR10
 > roslaunch ur_modern_driver ur10_bringup.launch robot_ip:=192.168.88.70 [reverse_port:=REVERSE_PORT]
 
 **IP is robot’s IP
 
-#### Visualize on Rviz
+#### 2) Visualize on Rviz
 > roslaunch ur10_rmf ur10_test.launch
 
-#### Enable Moveit Execution on hardware
+#### 3) Enable Moveit Execution on hardware
 > roslaunch ur10_moveit_config ur10_moveit_planning_execution.launch limited:=true
 
-#### Run Script
+#### 4) Run Script
 > rosrun ur10_rmf python_moveit2.py
 
+#### Note
+- Kinetic will have prob on using ur_modern_driver, so need to find fork copy:
+	https://github.com/iron-ox/ur_modern_driver/tree/iron-kinetic-devel
+- Comment `joint_state_publisher` node in `ur10_test.launch` will enable rviz ur10 to run with UR10 hardware 
+- Edit `enable_gripper` to 1 to enable usage of gripper
+- refer to `dynamixel_gripper` package to run gripper with ur10
