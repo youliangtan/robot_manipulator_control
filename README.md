@@ -27,16 +27,18 @@ According to http://wiki.ros.org/ur10_moveit_config
 
 
 ## Run Demo Script
-Robot’s config file (Planner type too: STOMP or OMPL)
-> roslaunch ur10_rmf ur10_test.launch
-Or 
-> roslaunch ur5_moveit_config moveit_rviz.launch config:=true
 
-Motion Planning Python Script
+#### Run On Rviz
+*Robot’s config file*
+> roslaunch ur10_rmf ur10_test.launch
+Or default
+> roslaunch ur10_moveit_config demo.launch
+
+*Motion Planning Python Script*
 > rosrun ur10_rmf python_moveit2.py
 
 
-Note: 
+#### Note
 - uncomment `joint_state_publisher` node in `ur10_test.launch` will enable rviz ur10 to run without UR10 hardware 
 - Change planning between: STOMP, CHOMP, OMPL
 
