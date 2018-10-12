@@ -32,10 +32,14 @@ Robot’s config file (Planner type too: STOMP or OMPL)
 Or 
 > roslaunch ur5_moveit_config moveit_rviz.launch config:=true
 
-Motion Planning script
+Motion Planning Python Script
 > rosrun ur10_rmf python_moveit2.py
 
-ompl planning or stomp???
+
+Note: 
+- uncomment `joint_state_publisher` node in `ur10_test.launch` will enable rviz ur10 to run without UR10 hardware 
+- Change planning between: STOMP, CHOMP, OMPL
+
 
 ## Run On UR10 Robot hardware
 config IP, create IP for UR10 in ubuntu connection, different port num exm: 192.168.88.222
