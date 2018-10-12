@@ -36,7 +36,7 @@ Robot’s config file
 > rosrun ur10_rmf python_moveit2.py
 
 
-#### Note
+### Note
 - uncomment `joint_state_publisher` node in `ur10_test.launch` will enable rviz ur10 to run without UR10 hardware 
 - Change planning between: STOMP, CHOMP, OMPL
 - If select STOMP planner, build package from industrial moveit: `https://github.com/ros-industrial/industrial_moveit`
@@ -61,7 +61,7 @@ Then Try to ping the connection 192.168.88.70 (robot’s)
 #### 4) Run Script
 > rosrun ur10_rmf python_moveit2.py
 
-#### Note
+### Note
 - Kinetic will have prob on using ur_modern_driver, so need to find fork copy:
 	https://github.com/iron-ox/ur_modern_driver/tree/iron-kinetic-devel
 - Comment `joint_state_publisher` node in `ur10_test.launch` will enable rviz ur10 to run with UR10 hardware 
