@@ -49,6 +49,7 @@ Then Try to ping the connection 192.168.88.70 (robot’s)
 
 #### Bring up connection between PC and UR10
 > roslaunch ur_modern_driver ur10_bringup.launch robot_ip:=192.168.88.70 [reverse_port:=REVERSE_PORT]
+
 **IP is robot’s IP
 
 #### Visualize on Rviz
