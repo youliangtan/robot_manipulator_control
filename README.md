@@ -29,12 +29,14 @@ According to http://wiki.ros.org/ur10_moveit_config
 ## Run Demo Script
 
 #### Run On Rviz
-*Robot’s config file*
+Robot’s config file
 > roslaunch ur10_rmf ur10_test.launch
+
 Or default
+
 > roslaunch ur10_moveit_config demo.launch
 
-*Motion Planning Python Script*
+Motion Planning Python Script
 > rosrun ur10_rmf python_moveit2.py
 
 
