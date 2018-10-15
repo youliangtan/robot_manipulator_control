@@ -1,5 +1,5 @@
 # rmf_robot_demo
-RMF robot project, involved using a UR10, dynamixel gripper, and AGV integration in demo showcase.
+(DEVELOPING) RMF robot project, involved using a UR10, dynamixel gripper, and AGV integration in demo showcase.
 ROS1 and ROS2 in communication
 
 UR10 arm Manipulation: uses [ROS MOVEIT!](https://moveit.ros.org) in motion planning
