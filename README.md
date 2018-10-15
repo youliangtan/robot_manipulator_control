@@ -3,7 +3,8 @@ RMF robot project, involved using a UR10, dynamixel gripper, and AGV integration
 ROS1 and ROS2 in communication
 
 UR10 arm Manipulation: uses [ROS MOVEIT!](https://moveit.ros.org) in motion planning
-and Dynamixel Gripper: *TBC, refer to fork copy in my repos*
+
+Dynamixel Gripper: *TBC, refer to fork copy in my repos*
 
 
 ## Environment Setup
@@ -44,7 +45,7 @@ rosrun ur10_rmf python_moveit2.py
 ### Note
 - uncomment `joint_state_publisher` node in `ur10_test.launch` will enable rviz ur10 to run without UR10 hardware 
 - Change planning between: STOMP, CHOMP, OMPL
-- If select STOMP planner, build package from industrial moveit: `https://github.com/ros-industrial/industrial_moveit`
+- If select STOMP planner, build package from [industrial moveit](https://github.com/ros-industrial/industrial_moveit)
 - Edit `enable_gripper` to 0 to disable pub sub to gripper's topic
 
 ## Run On UR10 Robot hardware
