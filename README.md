@@ -1,6 +1,6 @@
 # rmf_robot_demo
-(DEVELOPING) RMF robot project, involved using a UR10, dynamixel gripper, and AGV integration in demo showcase.
-ROS1 and ROS2 in communication
+(DEVELOPING) RMF robot demo project, involved in using a UR10, dynamixel gripper, and AGV in a demo showcase.
+ROS1 and ROS2 are used in communication integration.
 
 UR10 arm Manipulation: uses [ROS MOVEIT!](https://moveit.ros.org) in motion planning
 
@@ -29,6 +29,7 @@ sudo apt-get install ros-indigo-moveit
 catkin_make
 roscd ur10_rmf/scripts
 chmod +x python_moveit.py
+source ~/xxx/devel/setup.bash
 ````
 
 ## Run Demo Script
@@ -53,6 +54,7 @@ rosrun ur10_rmf python_moveit2.py
 config IP, create IP for UR10 in ubuntu connection, different port num, e.g: 192.168.88.222
 Then Try to ping the connection 192.168.88.70 (robot’s)
 
+
 #### 1) Bring up connection between PC and UR10
 ```
 roslaunch ur_modern_driver ur10_bringup.launch robot_ip:=192.168.88.70 [reverse_port:=REVERSE_PORT]
@@ -73,8 +75,9 @@ roslaunch ur10_moveit_config ur10_moveit_planning_execution.launch limited:=true
 ```
 rosrun ur10_rmf python_moveit2.py
 ````
+
 ### Note
-- Kinetic will have prob on using ur_modern_driver, so need to find fork copy:
+- Kinetic will have prob on using `ur_modern_driver`, so need to find fork copy:
 	https://github.com/iron-ox/ur_modern_driver/tree/iron-kinetic-devel
 - Comment `joint_state_publisher` node in `ur10_test.launch` will enable rviz ur10 to run with UR10 hardware 
 - Edit `enable_gripper` to 1 to enable usage of gripper
