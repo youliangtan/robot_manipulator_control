@@ -49,7 +49,7 @@ rosrun ur10_rmf python_moveit2.py
 - If select STOMP planner, build package from [industrial moveit](https://github.com/ros-industrial/industrial_moveit)
 - Edit `enable_gripper` to 0 to disable pub sub to gripper's topic
 
-## Run On UR10 Robot hardware
+## Run On UR10 hardware
 #### Config on UR10 GUI
 config IP, create IP for UR10 in ubuntu connection, different port num, e.g: 192.168.88.222
 Then Try to ping the connection 192.168.88.70 (robot’s)
