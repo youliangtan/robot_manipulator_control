@@ -7,6 +7,7 @@ ROS1 and ROS2 will eventually be used in communication integration. Two ROS 1 pa
 
 ![alt text](/resources/ur10_with_gripper.png?)
 
+Here, step-by-step instructions are listed here to guide user on how to setup the environment to: (1) Run it on Rviz  (2) Run it on a real UR10 Robot!!!!! Have fun people!!
 
 ## Environment Setup
 1) Install ROS
