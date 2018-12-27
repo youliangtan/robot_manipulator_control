@@ -1,9 +1,8 @@
-# robot_manipulator_control
+# Robot_Manipulator_Control
 (DEVELOPING) robot manipulator project, involved in using a UR10, 'self-made' dynamixel gripper.
-ROS1 and ROS2 will eventually be used in communication integration.
+ROS1 and ROS2 will eventually be used in communication integration. Two ROS 1 packages are used here:
 
 - **UR10 robot manipulator**: uses [ROS MOVEIT!](https://moveit.ros.org) in motion planning. Refer to `ur10_rmf` pkg.
-
 - **Dynamixel Gripper**: Refer to the `README.md` in the package folder. Refer to 'dynamixel_gripper' pkg.
 
 ![alt text](/resources/ur10_with_gripper.png?)
