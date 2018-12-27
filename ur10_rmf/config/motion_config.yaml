@@ -19,7 +19,7 @@ motion_group:
   - { id: G2, sequence: [M4] }
   - { id: G3, sequence: [M5, M1] } # cartesian picking
   - { id: G4, sequence: [M6, M3] } # cartesian placing
-  - { id: G5, sequence: [M7, M2] }
+  - { id: G5, sequence: [M7, M2] } # insert bevereage into payload
   - { id: G6, sequence: [M8] }
 
 # Specific Motion

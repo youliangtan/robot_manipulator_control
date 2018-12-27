@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-
-# ============================================================
-# Creator: Tan You Liang
-# Date: Sept 2018
-# Description:  ROS1 MOVE IT Arm control
-#               Edit `motion_config`.yaml for motion control
-# ============================================================
-
+"""
+============================================================
+Creator: Tan You Liang
+Date: Sept 2018
+Description:  ROS1 MOVE IT Arm control
+              Edit `motion_config`.yaml for motion control
+============================================================
+"""
 
 import sys
 import copy
@@ -159,7 +159,12 @@ class armManipulation(object):
   ################################# goal joint and pose planners #################################
   ##
 
-  # Joints move to Joint States
+  """ 
+  Joints move to Joint States 
+  @Param, joint_goal: 6x1 list with 6 joints info
+  @Param, time_factor: float, time factor
+  @Return: bool, is it success
+  """
   def go_to_joint_state(self, joint_goal, time_factor):
 
     state = self.robot.get_current_state()
@@ -179,7 +184,12 @@ class armManipulation(object):
     return all_close(joint_goal, current_joints, tolerance=0.03)
 
 
-  # Eef move to Pose Goal
+  """ 
+  Eef Goal pose
+  @Param, pose_list: 6x1 list with 6 dof info of the end effector
+  @Param, time_factor: float, time factor
+  @Return: bool, is it success
+  """
   def go_to_pose_goal(self, pose_list, time_factor ):
 
     group = self.group
@@ -209,6 +219,12 @@ class armManipulation(object):
   #################################  Cartesian planners #################################
   ##
 
+  """ 
+  Plan end effector moves in cartesian space
+  @Param, motion_list: , 6dof changes of the eef relative to previous pose
+  @Param, time_factor: float, time factor
+  @Return: plan (obj, planned trajectory), fraction (float, 1.0 means all completed)
+  """
   def plan_cartesian_path(self, motion_list, time_factor):
     state = self.robot.get_current_state()
     self.group.set_start_state(state)
@@ -251,7 +267,12 @@ class armManipulation(object):
     display_trajectory_publisher.publish(display_trajectory)
 
 
-  # Executing a Plan
+  
+  """ 
+  Execute plan paths/trajetory
+  @Param, plan: planned path of the robot arm
+  @Return: bool, is it success
+  """
   def execute_plan(self, plan):
     state = self.robot.get_current_state()
     self.group.set_start_state(state)

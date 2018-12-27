@@ -1,13 +1,13 @@
 #!/usr/bin/env python
-
-# =========================================================
-# Creator: Tan You Liang
-# Date: Sept 2018
-# Description:  Arm control process
-#               Edit `motion_config`.yaml for motion control
-# Gripper:      Open: 0, close: 1
-# ==========================================================
-
+"""
+=========================================================
+Creator: Tan You Liang
+Date: Sept 2018
+Description:  Arm control process
+              Edit `motion_config`.yaml for motion control
+Gripper:      Open: 0, close: 1
+==========================================================
+"""
 
 
 import sys
@@ -32,7 +32,7 @@ from std_msgs.msg import Int32
 from ur10_rmf.msg import grip_state
 
 
-class RobotManipulatorManager():
+class ManipulatorControl():
   def __init__(self):
 
     rospy.init_node('ur10_motionPlanning', anonymous=True)
@@ -52,11 +52,8 @@ class RobotManipulatorManager():
 
   # Open gripper, TODO: return success or fail
   def open_gripper(self): 
-    print "open 1.5"
 
     if (self.enable_gripper == True):
-      print "open 2"
-
       gripper_command = 0       # command to open gripper
       rospy.loginfo(gripper_command) #printout
       self.gripper_pub.publish(gripper_command)
@@ -103,8 +100,6 @@ class RobotManipulatorManager():
         exit(0)
 
     self.enable_gripper =  self.yaml_obj['enable_gripper'] # bool
-    print ("HEREEEEEEEEEEEEEE", self.enable_gripper )
-
   
 
   # Manage cartesian motion sequence from .yaml 
@@ -130,71 +125,115 @@ class RobotManipulatorManager():
     return motion_list
 
 
+  """ 
+  Execute single 'motion' according to 'motion_config.yaml' 
+  @Input: String, motion_id 
+  @Return: Bool, Success? 
+  """
+  def execute_motion(self, motion_id):
+    try:
+      motion_descriptor = self.yaml_obj['motion'][motion_id]
+      motion_type = motion_descriptor['type']
+      is_success = False
+      print( colored(" -- Motion: {} ".format(motion_descriptor), 'blue') )
 
-  # ** Execute series of motions **
-  def execute_motion(self):
+      ## **Joint Motion
+      if ( motion_type == 'joint_goal'):
+        joint_goal = motion_descriptor['data']
+        motion_time_factor = motion_descriptor['timeFactor']
+        is_success = self.ur10.go_to_joint_state(joint_goal, motion_time_factor)
+        
+      ## **Pose Goal Motion
+      elif ( motion_type == 'pose_goal'):
+        pose_goal = motion_descriptor['data']
+        motion_time_factor = motion_descriptor['timeFactor']
+        is_success = self.ur10.go_to_pose_goal(pose_goal, motion_time_factor)
+
+      ## **Cartesian Motion
+      elif ( motion_type == 'cartesian'):
+        motion_time_factor = motion_descriptor['timeFactor']
+        motion_sequence = motion_descriptor['sequence']
+        cartesian_motion_list = self.manage_cartesian_motion_list( motion_sequence )
+
+        cartesian_plan, planned_fraction = self.ur10.plan_cartesian_path(cartesian_motion_list, motion_time_factor)
+        print(" -- Planned fraction: {} ".format(planned_fraction))
+        if (planned_fraction == 1.0):
+          is_success = self.ur10.execute_plan(cartesian_plan)
+
+      ## **Close Gripper Motion
+      elif ( motion_type == 'eef_grip_obj'):
+        self.ur10.add_box()
+        self.ur10.attach_box()
+        is_success = self.close_gripper()
+
+      ## **Open Gripper Motion
+      elif ( motion_type == 'eef_release_obj'):
+        self.ur10.detach_box()
+        self.ur10.remove_box()
+        is_success = self.open_gripper()
+                
+      else:
+        print(colored("Error!! Invalid motion type in motion descriptor, motion_config.yaml", 'red', 'on_white'))
+        exit(0)
+
+      print(colored(" -- Motion success outcome: {}".format(is_success), 'green'))
+    
+    except KeyError, e:
+      print(colored("ERROR!!! invalid key in dict of .yaml, pls check your input related to motion_config.yaml",'red'))  
+    except IndexError, e:
+      print(colored("ERROR!!! invalid index in list of .yaml, pls check your input related to motion_config.yaml",'red'))  
+
+    return is_success
+
+
+
+  """ 
+  @input: String, Target Motion Group ID
+  @return: Bool, success? 
+  """
+  def execute_motion_group(self, target_id):
+    
+    try:
+      all_motion_groups = self.yaml_obj['motion_group']
+      numOfMotionGroup = len(all_motion_groups)
+      for i in range(numOfMotionGroup):
+        
+        if ( all_motion_groups[i]['id'] == target_id):  # if found id
+          motion_sequences = all_motion_groups[i]['sequence']
+          # Loop thru each 'motion'
+          for motion_id in motion_sequences:
+            self.execute_motion(motion_id)
+          return True
+      
+    except KeyError, e:
+      print(colored("ERROR!!! invalid key in dict of .yaml, pls check your input related to motion_config.yaml",'red'))  
+    except IndexError, e:
+      print(colored("ERROR!!! invalid index in list of .yaml, pls check your input related to motion_config.yaml",'red'))  
+    
+    return False
+    
+
+
+  """ 
+  Execute series of motion groups, motions, and cartesian motions
+  - Motion Groups are executed sequencially. Press enter to continue
+  """
+  def execute_all_motion_group(self):
 
     try:
 
       # Loop thru each 'motion group'
       for obj, i in zip(self.yaml_obj['motion_group'], range(99)):
-        motion_group = obj['sequence']
-        print( colored(" =================== Motion_Group {}: {} =================== ".format(i, motion_group), 'blue', attrs=['bold']) )
+        motion_sequences = obj['sequence']
+        print( colored(" =================== Motion_Group {}: {} =================== ".format(i, motion_sequences), 'blue', attrs=['bold']) )
         print( colored(" -- Press `Enter` to execute a movement -- ", 'cyan') )
         raw_input()
 
         # Loop thru each 'motion'
-        for motion in motion_group:
-          motion_descriptor = self.yaml_obj['motion'][motion]
-          motion_type = motion_descriptor['type']
-          is_success = False
-          print( colored(" -- Motion: {} ".format(motion_descriptor), 'blue') )
+        for motion_id in motion_sequences:
+          self.execute_motion(motion_id)
 
-          ## **Joint Motion
-          if ( motion_type == 'joint_goal'):
-            joint_goal = motion_descriptor['data']
-            motion_time_factor = motion_descriptor['timeFactor']
-            is_success = self.ur10.go_to_joint_state(joint_goal, motion_time_factor)
-            
-          ## **Pose Goal Motion
-          elif ( motion_type == 'pose_goal'):
-            pose_goal = motion_descriptor['data']
-            motion_time_factor = motion_descriptor['timeFactor']
-            is_success = self.ur10.go_to_pose_goal(pose_goal, motion_time_factor)
-
-          ## **Cartesian Motion
-          elif ( motion_type == 'cartesian'):
-            motion_time_factor = motion_descriptor['timeFactor']
-            motion_sequence = motion_descriptor['sequence']
-            cartesian_motion_list = self.manage_cartesian_motion_list( motion_sequence )
-
-            cartesian_plan, planned_fraction = self.ur10.plan_cartesian_path(cartesian_motion_list, motion_time_factor)
-            print(" -- Planned fraction: {} ".format(planned_fraction))
-            if (planned_fraction == 1.0):
-              is_success = self.ur10.execute_plan(cartesian_plan)
-
-          ## **Close Gripper Motion
-          elif ( motion_type == 'eef_grip_obj'):
-            self.ur10.add_box()
-            self.ur10.attach_box()
-            is_success = self.close_gripper()
-
-          ## **Open Gripper Motion
-          elif ( motion_type == 'eef_release_obj'):
-            self.ur10.detach_box()
-            self.ur10.remove_box()
-            print "open 1"
-            is_success = self.open_gripper()
-                    
-          else:
-            print(colored("Error!! Invalid motion type in motion descriptor, motion_config.yaml", 'red', 'on_white'))
-            exit(0)
-
-          print(colored(" -- Motion success outcome: {}".format(is_success), 'green'))
-
-
-      print(colored(" ============  Motion Completed!  =========", 'green'))
-
+      print(colored(" ===================  Motion Completed!  ===================", 'green'))
 
     except rospy.ROSInterruptException:
       return
@@ -207,7 +246,11 @@ class RobotManipulatorManager():
 
 
 if __name__ == '__main__':
-  print(colored(" ----- Begin Python Moveit Script ----- " , 'white', 'on_red'))
-  robot_manipulator_control = RobotManipulatorManager()
+  print(colored("  -------- Begin Python Moveit Script --------  " , 'white', 'on_green'))
+  robot_manipulator_control = ManipulatorControl()
   robot_manipulator_control.load_motion_config( path="../config/motion_config.yaml" )
-  robot_manipulator_control.execute_motion()
+  robot_manipulator_control.execute_all_motion_group()
+  
+  # spin and wait for call back 
+
+  # robot_manipulator_control.execute_motion_group("G5")

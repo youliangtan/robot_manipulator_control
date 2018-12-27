@@ -1,6 +1,6 @@
-# rmf_robot_demo
-(DEVELOPING) RMF robot manipulator project, involved in using a UR10, dynamixel gripper, and AGV in a demo showcase.
-ROS1 and ROS2 are used in communication integration.
+# robot_manipulator_control
+(DEVELOPING) robot manipulator project, involved in using a UR10, 'self-made' dynamixel gripper.
+ROS1 and ROS2 will eventually be used in communication integration.
 
 UR10 arm Manipulation: uses [ROS MOVEIT!](https://moveit.ros.org) in motion planning
 
@@ -39,7 +39,7 @@ Robot’s config file
 `roslaunch ur10_rmf ur10_test.launch` or default `roslaunch ur10_moveit_config demo.launch`
 
 #### 2) Motion Planning Python Script
-To program a series of motion , edit the yaml file at `config/motion_config.yaml`. In the yaml file, the hierachy of each is: `motion_group` > `motion` > `cartesian_motion`.
+To program a series of motion , edit the yaml file at `config/motion_config.yaml`. 
 
 Once done, run the script to visualize the motion control.
 ```
@@ -83,5 +83,15 @@ rosrun ur10_rmf python_moveit2.py
 - Kinetic will have prob on using `ur_modern_driver`, so need to find fork copy:
 	https://github.com/iron-ox/ur_modern_driver/tree/iron-kinetic-devel
 - Comment `joint_state_publisher` node in `ur10_test.launch` will enable rviz ur10 to run with UR10 hardware 
-- Edit `enable_gripper` to 1 to enable usage of gripper
 - refer to `dynamixel_gripper` package to run gripper with ur10
+- Edit `enable_gripper` in .yaml file to `True` to enable usage of gripper
+- In the yaml file, the hierachy of each is: `motion_group` > `motion` > `cartesian_motion`.
+
+
+### ManipulatorControl Class
+Class `ManipulatorControl` simplfied the use of typing code to control the robot manipulator. This helps user to create a series of motion just by edit the `motion_config.yaml` file. 3 useful functions in this class are:
+
+- **manipulator_control.execute_all_motion_group()**, 
+- **manipulator_control.execute_motion_group(string motion_group_id)**  return True/False, True: success, False: Failed
+- **manipulator_control.execute_motion(string motion_id)**  return True/False, True: success, False: Failed
+
