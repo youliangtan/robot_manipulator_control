@@ -1,5 +1,13 @@
 #!/usr/bin/env python
 
+# ============================================================
+# Creator: Tan You Liang
+# Date: Sept 2018
+# Description:  ROS1 MOVE IT Arm control
+#               Edit `motion_config`.yaml for motion control
+# ============================================================
+
+
 import sys
 import copy
 import rospy
@@ -10,15 +18,22 @@ import tf
 from math import pi
 from std_msgs.msg import String
 from moveit_commander.conversions import pose_to_list
+from termcolor import colored
+
+
+
+##
+## ============================== Some Commmon Functions ===============================
+##
+
 
 
 # check if current state reaches goal state, check all joints is within tolerance
 def all_close(goal, actual, tolerance=0.001):
   """
   Convenience method for testing if a list of values are within a tolerance of their counterparts in another list
-  @param: goal       A list of floats, a Pose or a PoseStamped
-  @param: actual     A list of floats, a Pose or a PoseStamped
-  @param: tolerance  A float
+  @param: goal, actual    A list of floats, a Pose or a PoseStamped
+  @param: tolerance       A float
   @returns: bool
   """
   all_equal = True
@@ -37,12 +52,16 @@ def all_close(goal, actual, tolerance=0.001):
   return True
 
 
+# Change Quaternion pose with input delta rpy
 def changeInOrientation( wpose_quaternion, delta_roll, delta_pitch, delta_yaw):
-
-    qua = [ wpose_quaternion.x,
-            wpose_quaternion.y, 
-            wpose_quaternion.z, 
-            wpose_quaternion.w]
+    
+    if (wpose_quaternion == 0):
+      qua = [0,0,0,1]
+    else: 
+      qua = [ wpose_quaternion.x,
+              wpose_quaternion.y, 
+              wpose_quaternion.z, 
+              wpose_quaternion.w]
 
     (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(qua)
     quaternion = tf.transformations.quaternion_from_euler(roll + delta_roll , pitch + delta_pitch, yaw + delta_yaw)
@@ -56,23 +75,27 @@ def changeInOrientation( wpose_quaternion, delta_roll, delta_pitch, delta_yaw):
 
 
 # control arm velocity of cartesian by adding travel time betwwen each way points
-def controlArmVelocity(plan, numberOfWayPoints = 1, factor=1): 
+def controlArmVelocity(plan, numberOfWayPoints = 1, timeFactor=1): 
 
   print "Number of Planned Waypoints ", numberOfWayPoints
-  print "Time change factor as ", factor
+  print "Time change factor as ", timeFactor
 
   for i in range(1, numberOfWayPoints):
 
     time = plan.joint_trajectory.points[i].time_from_start.to_sec()
-    plan.joint_trajectory.points[i].time_from_start = rospy.Time.from_sec( time*factor ) 
-    plan.joint_trajectory.points[i].velocities = [ j/factor  for j in plan.joint_trajectory.points[i].velocities ]  #divide vel with factor
-    plan.joint_trajectory.points[i].accelerations = [ j/factor  for j in plan.joint_trajectory.points[i].accelerations ]  #divide acc with factor
+    plan.joint_trajectory.points[i].time_from_start = rospy.Time.from_sec( time*timeFactor ) 
+    plan.joint_trajectory.points[i].velocities = [ j/timeFactor  for j in plan.joint_trajectory.points[i].velocities ]  #divide vel with factor
+    plan.joint_trajectory.points[i].accelerations = [ j/timeFactor  for j in plan.joint_trajectory.points[i].accelerations ]  #divide acc with factor
 
   return plan
 
 
 
-## CLASS
+##
+## ============================== Arm Manipulator Class ===============================
+##
+
+
 
 class armManipulation(object):
 
@@ -81,71 +104,39 @@ class armManipulation(object):
   def __init__(self):
     super(armManipulation, self).__init__()
 
-    ## First initialize `moveit_commander`_ and a `rospy`_ node:
-    # rospy.init_node('moveGroup_ur10_rmf', anonymous=True)
-    
     moveit_commander.roscpp_initialize(sys.argv)
+    robot = moveit_commander.RobotCommander()                 # outer-level interface to the robot
+    scene = moveit_commander.PlanningSceneInterface()         # world surrounding the robot: (will pub collision obj)
+    group_name = "manipulator"                                # group name for ur manipulator
+    group = moveit_commander.MoveGroupCommander(group_name)   # interface to one group of joints.
 
-    ## Instantiate a `RobotCommander`_ object. This object is the outer-level interface to
-    ## the robot:
-    robot = moveit_commander.RobotCommander()
+    ## `DisplayTrajectory`_ publisher which is used to pub trajectories for RViz to visualize:
+    display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path', moveit_msgs.msg.DisplayTrajectory, queue_size=20)
 
-    ## Instantiate a `PlanningSceneInterface`_ object.  This object is an interface
-    ## to the world surrounding the robot: (will pub collision obj )
-    scene = moveit_commander.PlanningSceneInterface()
-
-    ## Instantiate a `MoveGroupCommander`_ object.  This object is an interface
-    ## to one group of joints.  In this case the group is the joints in the Panda
-    ## arm so we set ``group_name = panda_arm``. If you are using a different robot,
-    ## you should change this value to the name of your robot arm planning group.
-    ## This interface can be used to plan and execute motions on the Panda:
-    group_name = "manipulator"
-    group = moveit_commander.MoveGroupCommander(group_name)
-
-    ## We create a `DisplayTrajectory`_ publisher which is used later to publish
-    ## trajectories for RViz to visualize:
-    display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path',
-                                                   moveit_msgs.msg.DisplayTrajectory,
-                                                   queue_size=20)
-
-
-
-
-    ## Getting Basic Information
-    ## ^^^^^^^^^^^^^^^^^^^^^^^^^
-    # We can get the name of the reference frame for this robot:
-    planning_frame = group.get_planning_frame()
-    print "============ Reference frame: %s" % planning_frame
-
-    eef_link = group.get_end_effector_link()
-    print "============ End effector: %s" % eef_link
-
-    group_names = robot.get_group_names()
-    print "============ Robot Groups:", robot.get_group_names()
-
-    print "============ Printing robot state"
-    print robot.get_current_state()
-    print ""
 
     # Misc variables
-    self.box_name = ''
+    self.box_name = "obj_box"
+    self.base_name = "base_box"
     self.robot = robot
     self.scene = scene
     self.group = group
     self.display_trajectory_publisher = display_trajectory_publisher
-    self.planning_frame = planning_frame
-    self.eef_link = eef_link
-    self.group_names = group_names
+    self.planning_frame = group.get_planning_frame()
+    self.eef_link = group.get_end_effector_link()
+    self.group_names = robot.get_group_names()
 
+    ## Printing Basic Information
+    print (colored(" --Reference frame: {}".format(self.planning_frame), "yellow"))
+    print (colored(" --End effector: {}".format(self.eef_link), "yellow"))
+    print (colored(" --Robot Groups: {}".format(self.group_names), "yellow"))
+    print (colored(" --Robot current state: {}".format(robot.get_current_state()), "yellow"))
 
     ## Add Robot Base to scene
-    base_name = "base_box"
-    is_known = base_name in scene.get_known_object_names()
-    print "is base added befor ???? ", is_known
-
-    if (is_known == True): # check if base model is added before
-      scene.remove_world_object(base_name)
-      scene.remove_world_object("box")
+    is_known = self.base_name in scene.get_known_object_names()
+    print ("is base added before: {} \n".format(is_known))
+    if (is_known == True): # Check if base model is added be4
+      scene.remove_world_object(self.base_name)
+      scene.remove_world_object(self.box_name)
       rospy.sleep(0.5)
 
     ## Create a box in the planning scene at the location of the left finger:
@@ -153,19 +144,23 @@ class armManipulation(object):
     box.header.frame_id = "base_link"
     box.pose.orientation.w = 1.0
     box.pose.position.z = -0.05
-    print scene.add_box(base_name, box, size=(0.7, 0.7, 0.1))
-    print "added base_box yo~"
+    scene.add_box(self.base_name, box, size=(0.7, 0.7, 0.1))
 
     self.scene = scene
     rospy.sleep(1.5)  # crude method to ensure scene is loaded
 
 
-
-
   ## ------------------------------------- End init -------------------------------------
 
-  #### Joints move to Joint States
-  def go_to_joint_state(self, joint_goal):
+
+
+
+  ##
+  ################################# goal joint and pose planners #################################
+  ##
+
+  # Joints move to Joint States
+  def go_to_joint_state(self, joint_goal, time_factor):
 
     state = self.robot.get_current_state()
     self.group.set_start_state(state)
@@ -174,8 +169,7 @@ class armManipulation(object):
     # The go command can be called with joint values, poses, or without any
     # group.go(joint_goal, wait=True)
     plan = group.plan (joints = joint_goal)
-
-    plan = controlArmVelocity(plan, numberOfWayPoints=len(plan.joint_trajectory.points), factor=2  )
+    plan = controlArmVelocity(plan, numberOfWayPoints=len(plan.joint_trajectory.points), timeFactor=time_factor )
 
     group.execute(plan, wait=True)
     group.stop()
@@ -185,134 +179,63 @@ class armManipulation(object):
     return all_close(joint_goal, current_joints, tolerance=0.03)
 
 
-  #### Eef move to Pose Goal
-  def go_to_pose_goal(self):
+  # Eef move to Pose Goal
+  def go_to_pose_goal(self, pose_list, time_factor ):
 
     group = self.group
 
     pose_goal = geometry_msgs.msg.Pose()
-    pose_goal.orientation.w = 1.0
-    pose_goal.position.x = 0.4
-    pose_goal.position.y = 0.1
-    pose_goal.position.z = 0.4
+    pose_goal.position.x = pose_list[0]
+    pose_goal.position.y = pose_list[1]
+    pose_goal.position.z = pose_list[2]
+    pose_goal.orientation = changeInOrientation( 0, pose_list[3],   # roll
+                                                    pose_list[4],   # pitch
+                                                    pose_list[5] )  # yaw
     group.set_pose_target(pose_goal)
 
     ## Planner to compute the plan and execute it.
-    plan = group.go(wait=True)
-
-    # plan = controlArmVelocity(plan, numberOfWayPoints=1, timeInterval=0.8  )
-
+    plan = group.plan (joints = joint_goal)
+    plan = controlArmVelocity(plan, numberOfWayPoints=len(plan.joint_trajectory.points), timeFactor=time_factor )
+    group.execute(plan, wait=True)
     group.stop()
     group.clear_pose_targets()
-
     current_pose = self.group.get_current_pose().pose
+    
     return all_close(pose_goal, current_pose, 0.01)
 
 
 
-  ## ================================ Cartesian =================================
+  ##
+  #################################  Cartesian planners #################################
+  ##
 
-
-  ## Picking the beverage
-  #### Eef Paths in Cartesian space
-  def plan_cartesian_picking_path(self, scale=1):
-    
+  def plan_cartesian_path(self, motion_list, time_factor):
     state = self.robot.get_current_state()
     self.group.set_start_state(state)
-    group = self.group
-    
+    wpose = self.group.get_current_pose().pose
     waypoints = []
-    wpose = group.get_current_pose().pose
 
+    for motion_data in motion_list:
+      wpose.position.x += motion_data[0]
+      wpose.position.y += motion_data[1]
+      wpose.position.z += motion_data[2]
+      wpose.orientation = changeInOrientation(  wpose.orientation,
+                                                motion_data[3],   # roll
+                                                motion_data[4],   # pitch
+                                                motion_data[5] )  # yaw
+      waypoints.append(copy.deepcopy(wpose))
 
-    ## first move
-    wpose.position.z += scale * 0.1  # First move down (z)    
-    waypoints.append(copy.deepcopy(wpose))
-
-    ## second move
-    wpose.orientation = changeInOrientation( wpose.orientation, 0, 0, 0.785) #45 degrees
-    wpose.position.x -= scale * 0.1  # Second move forward/backwards in (x)
-    wpose.position.y += scale * 0.2  # and sideways (y)
-    waypoints.append(copy.deepcopy(wpose))
-
-    ## third move
-    wpose.position.x += scale * 0.06  # Second move forward/backwards in (x)
-    wpose.position.y += scale * 0.06  # and sideways (y)
-    waypoints.append(copy.deepcopy(wpose))
-
-
-    # We want the Cartesian path to be interpolated at a resolution of 1 cm
-    # which is why we will specify 0.01 as the eef_step in Cartesian
-    # translation.  We will disable the jump threshold by setting it to 0.0 disabling:
-    (plan, fraction) = group.compute_cartesian_path(
-                                       waypoints,   # waypoints to follow
-                                       0.2,         # eef_step
-                                       0.0)         # jump_threshold
-
-    # Note: We are just planning, not asking move_group to actually move the robot yet:
-
-    plan = controlArmVelocity(plan, numberOfWayPoints=len(plan.joint_trajectory.points), factor=2  )
-
+    (plan, fraction) = self.group.compute_cartesian_path(
+                                    waypoints,   # waypoints to follow
+                                    0.2,         # eef_step
+                                    0.0)         # jump_threshold, 0 to disable
+    
+    plan = controlArmVelocity(plan, numberOfWayPoints=len(plan.joint_trajectory.points), timeFactor=time_factor )
     return plan, fraction
 
 
-  #Placing the beverage
-  def plan_cartesian_placing_path(self, scale=1):
 
-    state = self.robot.get_current_state()
-    self.group.set_start_state(state)
-    group = self.group
-    
-    waypoints = []
-    wpose = group.get_current_pose().pose
-
-    ## First move
-    wpose.position.x -= scale * 0.06  # Second move forward/backwards in (x)
-    wpose.position.y -= scale * 0.06  # and sideways (y)
-    waypoints.append(copy.deepcopy(wpose))
-
-    ## second move
-    wpose.orientation = changeInOrientation( wpose.orientation, 0, 0, -0.785) #45 degrees
-    wpose.position.x += scale * 0.1  # Second move forward/backwards in (x)
-    wpose.position.y -= scale * 0.2  # and sideways (y)
-    waypoints.append(copy.deepcopy(wpose))
-
-    ## Third move
-    wpose.position.z -= scale * 0.1  # First move down (z)    
-    waypoints.append(copy.deepcopy(wpose))
-
-    # Same as picking
-    (plan, fraction) = group.compute_cartesian_path(waypoints, 0.2, 0.0)
-
-    plan = controlArmVelocity(plan, numberOfWayPoints=len(plan.joint_trajectory.points), factor=2  )
-
-    return plan, fraction    
-
-
-
-  # Placing the beverage in payload
-  def plan_cartesian_payload_path(self, scale=1):
-
-    state = self.robot.get_current_state()
-    self.group.set_start_state(state)
-    group = self.group
-    
-    waypoints = []
-    wpose = group.get_current_pose().pose
-    wpose.position.x += scale * 0.06  # Second move forward/backwards in (x)
-    waypoints.append(copy.deepcopy(wpose))
-
-    # Same as picking
-    (plan, fraction) = group.compute_cartesian_path(waypoints, 0.2, 0.0)
-    
-    plan = controlArmVelocity(plan, numberOfWayPoints=len(plan.joint_trajectory.points), factor=2 )
-
-    return plan, fraction    
-
-
-
-
-  #### Displaying a Planned Trajectory
+  # Displaying a Planned Trajectory
   def display_trajectory(self, plan):
 
     robot = self.robot
@@ -328,26 +251,25 @@ class armManipulation(object):
     display_trajectory_publisher.publish(display_trajectory)
 
 
-  #### Executing a Plan
+  # Executing a Plan
   def execute_plan(self, plan):
     state = self.robot.get_current_state()
     self.group.set_start_state(state)
     self.group.execute(plan, wait=True)
+    return True
 
 
-  #### Ensuring Collision Object state Updates Are Receieved
+  ##
+  ################################# Scene Object Handlers #################################
+  ##
+
+
+  # Ensuring Collision Object state Updates Are Receieved
   def wait_for_state_update(self, box_is_known=False, box_is_attached=False, timeout=4):
 
     box_name = self.box_name
     scene = self.scene
 
-    ## If the Python node dies before publishing a collision object update message, the message
-    ## could get lost and the box will not appear. To ensure that the updates are
-    ## made, we wait until we see the changes reflected in the
-    ## ``get_known_object_names()`` and ``get_known_object_names()`` lists.
-    ## For the purpose of this tutorial, we call this function after adding,
-    ## removing, attaching or detaching an object in the planning scene. We then wait
-    ## until the updates have been made or ``timeout`` seconds have passed
     start = rospy.get_time()
     seconds = rospy.get_time()
 
@@ -372,24 +294,20 @@ class armManipulation(object):
     return False
 
 
-  #### Adding Objects to the Planning Scene
+  # Adding Objects to the Planning Scene
   def add_box(self, timeout=4):
-
-    box_name = self.box_name
-    scene = self.scene
 
     ## Create a box in the planning scene at the location of the left finger:
     box_pose = geometry_msgs.msg.PoseStamped()
     box_pose.header.frame_id = "ee_link"
     box_pose.pose.orientation.w = 1.0
-    box_name = "box"
-    scene.add_box(box_name, box_pose, size=(0.1, 0.1, 0.1))
+    box_name = self.box_name
 
-    self.box_name=box_name
+    self.scene.add_box( box_name, box_pose, size=(0.1, 0.1, 0.1) )
     return self.wait_for_state_update(box_is_known=True, timeout=timeout)
 
 
-  #### Attaching Objects to the Robot
+  # Attaching Objects to the Robot
   def attach_box(self, timeout=4):
 
     box_name = self.box_name
@@ -398,7 +316,7 @@ class armManipulation(object):
     eef_link = self.eef_link
     group_names = self.group_names
 
-    ## Next, attach the box to the eef. Manipulating objects requires the robot be able to touch them without the planning scene
+    ## attach the box to the eef. Manipulating objects requires the robot be able to touch them without the planning scene
     ## reporting the contact as a collision. By adding link names to the ``touch_links`` array, planning scene will ignore 
     ## collisions between those links and the box. grasping group depends on model of robot manipulator
     grasping_group = 'manipulator'
@@ -409,20 +327,19 @@ class armManipulation(object):
     return self.wait_for_state_update(box_is_attached=True, box_is_known=False, timeout=timeout)
 
 
-  #### Detaching Objects from the Robot
+  # Detaching Objects from the Robot
   def detach_box(self, timeout=4):
 
     box_name = self.box_name
     scene = self.scene
     eef_link = self.eef_link
-    
     scene.remove_attached_object(eef_link, name=box_name)
     
     # We wait for the planning scene to update.
     return self.wait_for_state_update(box_is_known=True, box_is_attached=False, timeout=timeout)
 
 
-  ## Removing Objects from the Planning Scene  
+  # Removing Objects from the Planning Scene  
   def remove_box(self, timeout=4):
 
     box_name = self.box_name
@@ -433,3 +350,101 @@ class armManipulation(object):
 
     # We wait for the planning scene to update.
     return self.wait_for_state_update(box_is_attached=False, box_is_known=False, timeout=timeout)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ********************************************
+# ** Grave Yard **
+# ********************************************
+
+  # # Picking the beverage, Eef Paths in Cartesian space # scale 2
+  # def plan_cartesian_picking_path(self, scale=1):
+    
+  #   state = self.robot.get_current_state()
+  #   self.group.set_start_state(state)
+        
+  #   waypoints = []
+  #   wpose = self.group.get_current_pose().pose
+
+
+  #   ## (1) first move
+  #   wpose.position.z += scale * 0.1  # First move down (z)    
+  #   waypoints.append(copy.deepcopy(wpose))
+
+  #   ## (2) second move
+  #   wpose.orientation = changeInOrientation( wpose.orientation, 0, 0, 0.785) #45 degrees
+  #   wpose.position.x -= scale * 0.1  # Second move forward/backwards in (x)
+  #   wpose.position.y += scale * 0.2  # and sideways (y)
+  #   waypoints.append(copy.deepcopy(wpose))
+
+  #   ## (3) third move
+  #   wpose.position.x += scale * 0.06  # Second move forward/backwards in (x)
+  #   wpose.position.y += scale * 0.06  # and sideways (y)
+  #   waypoints.append(copy.deepcopy(wpose))
+
+  #   (plan, fraction) = self.group.compute_cartesian_path(
+  #                                      waypoints,   # waypoints to follow
+  #                                      0.2,         # eef_step
+  #                                      0.0)         # jump_threshold, 0 to disable
+
+  #   # Note: We are just planning, not asking move_group to actually move the robot yet:
+
+  #   plan = controlArmVelocity(plan, numberOfWayPoints=len(plan.joint_trajectory.points), timeFactor=2  )
+
+  #   return plan, fraction
+
+
+  # #Placing the beverage
+  # def plan_cartesian_placing_path(self, scale=1):
+
+  #   state = self.robot.get_current_state()
+  #   self.group.set_start_state(state)
+    
+  #   waypoints = []
+  #   wpose = self.group.get_current_pose().pose
+
+  #   ## (1) First move
+  #   wpose.position.x -= scale * 0.06  # Second move forward/backwards in (x)
+  #   wpose.position.y -= scale * 0.06  # and sideways (y)
+  #   waypoints.append(copy.deepcopy(wpose))
+
+  #   ## (2) second move
+  #   wpose.orientation = changeInOrientation( wpose.orientation, 0, 0, -0.785) #45 degrees
+  #   wpose.position.x += scale * 0.1  # Second move forward/backwards in (x)
+  #   wpose.position.y -= scale * 0.2  # and sideways (y)
+  #   waypoints.append(copy.deepcopy(wpose))
+
+  #   ## (3) Third move
+  #   wpose.position.z -= scale * 0.1  # First move down (z)    
+  #   waypoints.append(copy.deepcopy(wpose))
+
+  #   # Same as picking
+  #   (plan, fraction) = self.group.compute_cartesian_path(waypoints, 0.2, 0.0)
+
+  #   plan = controlArmVelocity(plan, numberOfWayPoints=len(plan.joint_trajectory.points), timeFactor=2  )
+
+  #   return plan, fraction    

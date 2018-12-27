@@ -1,14 +1,26 @@
 #!/usr/bin/env python
 
-# Open: 0, close: 1
+# =========================================================
+# Creator: Tan You Liang
+# Date: Sept 2018
+# Description:  Arm control process
+#               Edit `motion_config`.yaml for motion control
+# Gripper:      Open: 0, close: 1
+# ==========================================================
+
+
 
 import sys
+import os 
 import copy
 import rospy
+import yaml
 from time import sleep
+from termcolor import colored
 
 import moveit_commander
 import moveit_msgs.msg
+from moveit_commander.conversions import pose_to_list
 import geometry_msgs.msg
 import tf
 from arm_Manipulation import armManipulation
@@ -19,141 +31,183 @@ from std_msgs.msg import Int32
 # from dynamixel_gripper.msg  import grip_state
 from ur10_rmf.msg import grip_state
 
-from moveit_commander.conversions import pose_to_list
+
+class RobotManipulatorManager():
+  def __init__(self):
+
+    rospy.init_node('ur10_motionPlanning', anonymous=True)
+    rospy.Subscriber("gripper/state", grip_state, self.gripperState_callback)
+    self.gripper_pub = rospy.Publisher('gripper/command', Int32, queue_size=10)
+    self.ur10 = armManipulation()   ## moveGroup  
+    self.gripper_state = -1
+    self.rate = rospy.Rate(5) # 5hz
+    self.enable_gripper = False
+    self.yaml_obj = []
 
 
-rospy.init_node('ur10_motionPlanning', anonymous=True)
-pub = rospy.Publisher('gripper/command', Int32, queue_size=10)
+  def gripperState_callback(self, data): 
+    # rospy.loginfo( "I heard gripper state is {}".format(data.gripper_state))
+    self.gripper_state = data.gripper_state
+      
 
-gripper_state = 0
-rate = rospy.Rate(5) # 5hz
+  # Open gripper, TODO: return success or fail
+  def open_gripper(self): 
+    print "open 1.5"
 
-enable_gripper = 1
+    if (self.enable_gripper == True):
+      print "open 2"
 
+      gripper_command = 0       # command to open gripper
+      rospy.loginfo(gripper_command) #printout
+      self.gripper_pub.publish(gripper_command)
 
-def gripperState_callback(data): 
-  global gripper_state
-  # rospy.loginfo( "I heard gripper state is {}".format(data.gripper_state))
-  gripper_state = data.gripper_state
+      # wait until get state is open
+      while (self.gripper_state == 1):
+        if (self.gripper_state == -1):
+          print("Error From Gripper!!")
+          return False  
+        print("gripper still close... with state {}".format(self.gripper_state))
+        self.rate.sleep()
     
-    
-def is_gripperOpen(): 
-
-  if (enable_gripper == 1):
-    global gripper_state
-    gripper_command = 0       # command to open gripper
-    rospy.loginfo(gripper_command) #printout
-    pub.publish(gripper_command)
-
-    # wait until get state is open
-    while (gripper_state == 1):
-      print "gripper still close... with state".format(gripper_state)
-      rate.sleep()
+    return True
 
 
-def is_gripperClose():
+  # Close Gripper, TODO: return success or fail
+  def close_gripper(self):
 
-  if (enable_gripper == 1):
-    global gripper_state
-    gripper_command = 1       #command to close gripper
-    rospy.loginfo(gripper_command)
-    pub.publish(gripper_command)
+    if (self.enable_gripper == True):
+      gripper_command = 1       #command to close gripper
+      rospy.loginfo(gripper_command)
+      self.gripper_pub.publish(gripper_command)
 
-    # wait until get state is close
-    while (gripper_state == 0):
-      print "gripper still open... with state {} ".format(gripper_state)
-      rate.sleep()
+      # wait until get state is close
+      while (self.gripper_state == 0):
+        if (self.gripper_state == -1):
+          print("Error From Gripper!!")
+          return False  
+        print("gripper still open... with state {} ".format(self.gripper_state))
+        self.rate.sleep()
+
+    return True
 
 
-def gripper_InOut_payLoad():
+  # Read Yaml file
+  def load_motion_config(self,path):
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    full_path = dir_path + "/" + path
+    with open(full_path, 'r') as stream:
+      try:
+        self.yaml_obj = yaml.load(stream)
+      except yaml.YAMLError as exc:
+        print("Error in loading Yaml" + exc)
+        exit(0)
 
-  print "============ Press `Enter` to put hand into payload ..."
-  raw_input()
-  cartesian_plan, planned_fraction = ur10.plan_cartesian_payload_path(scale=2)
-  print " # Planned fraction: {} ".format(planned_fraction)
-    
-  if (planned_fraction == 1.0):
-    ur10.execute_plan(cartesian_plan)
+    self.enable_gripper =  self.yaml_obj['enable_gripper'] # bool
+    print ("HEREEEEEEEEEEEEEE", self.enable_gripper )
 
-  is_gripperOpen()
-
-  print "============ Press `Enter` to detach and remove the box from the Panda robot n scene..."
-  raw_input()
-  ur10.detach_box()
-  ur10.remove_box()
-
-  print "============ Press `Enter` to put hand out of payload ..."
-  raw_input()
-  cartesian_plan, planned_fraction = ur10.plan_cartesian_payload_path(scale=-2)
-  print " # Planned fraction: {} ".format(planned_fraction)
   
-  if (planned_fraction == 1.0):
-    ur10.execute_plan(cartesian_plan)
+
+  # Manage cartesian motion sequence from .yaml 
+  def manage_cartesian_motion_list(self, cartesian_motion):
+    motion_list = []
+
+    for cartesian_id in cartesian_motion:
+      # Support cooficient handling
+      char_idx = cartesian_id.find('C')
+      filtered_cartesian_id = cartesian_id[char_idx:len(cartesian_id)]
+      coefficient = cartesian_id[0:char_idx]
+      cartesian_data = self.yaml_obj['cartesian_motion'][filtered_cartesian_id]
+      
+      if (len(coefficient)> 0 ): # check if theres cooficient infront of Cartesian motion
+        if (coefficient == '-'):
+          coefficient = -1
+        else:
+          coefficient = float(coefficient)
+        cartesian_data = map(lambda x: x *coefficient, cartesian_data)
+      
+      motion_list.append(cartesian_data)
+
+    return motion_list
 
 
 
-## =============================================== MAIN ==============================================================
+  # ** Execute series of motions **
+  def execute_motion(self):
+
+    try:
+
+      # Loop thru each 'motion group'
+      for obj, i in zip(self.yaml_obj['motion_group'], range(99)):
+        motion_group = obj['sequence']
+        print( colored(" =================== Motion_Group {}: {} =================== ".format(i, motion_group), 'blue', attrs=['bold']) )
+        print( colored(" -- Press `Enter` to execute a movement -- ", 'cyan') )
+        raw_input()
+
+        # Loop thru each 'motion'
+        for motion in motion_group:
+          motion_descriptor = self.yaml_obj['motion'][motion]
+          motion_type = motion_descriptor['type']
+          is_success = False
+          print( colored(" -- Motion: {} ".format(motion_descriptor), 'blue') )
+
+          ## **Joint Motion
+          if ( motion_type == 'joint_goal'):
+            joint_goal = motion_descriptor['data']
+            motion_time_factor = motion_descriptor['timeFactor']
+            is_success = self.ur10.go_to_joint_state(joint_goal, motion_time_factor)
+            
+          ## **Pose Goal Motion
+          elif ( motion_type == 'pose_goal'):
+            pose_goal = motion_descriptor['data']
+            motion_time_factor = motion_descriptor['timeFactor']
+            is_success = self.ur10.go_to_pose_goal(pose_goal, motion_time_factor)
+
+          ## **Cartesian Motion
+          elif ( motion_type == 'cartesian'):
+            motion_time_factor = motion_descriptor['timeFactor']
+            motion_sequence = motion_descriptor['sequence']
+            cartesian_motion_list = self.manage_cartesian_motion_list( motion_sequence )
+
+            cartesian_plan, planned_fraction = self.ur10.plan_cartesian_path(cartesian_motion_list, motion_time_factor)
+            print(" -- Planned fraction: {} ".format(planned_fraction))
+            if (planned_fraction == 1.0):
+              is_success = self.ur10.execute_plan(cartesian_plan)
+
+          ## **Close Gripper Motion
+          elif ( motion_type == 'eef_grip_obj'):
+            self.ur10.add_box()
+            self.ur10.attach_box()
+            is_success = self.close_gripper()
+
+          ## **Open Gripper Motion
+          elif ( motion_type == 'eef_release_obj'):
+            self.ur10.detach_box()
+            self.ur10.remove_box()
+            print "open 1"
+            is_success = self.open_gripper()
+                    
+          else:
+            print(colored("Error!! Invalid motion type in motion descriptor, motion_config.yaml", 'red', 'on_white'))
+            exit(0)
+
+          print(colored(" -- Motion success outcome: {}".format(is_success), 'green'))
 
 
-def main():
-
-  rospy.Subscriber("gripper/state", grip_state, gripperState_callback)
-
-  try:
-
-    print "============ Press `Enter` to execute a movement to place beverage joint state goal ..."
-    raw_input()
-    place_joint_goal = [0, -pi/4, pi/2, -pi/4, pi/2, -pi/4]
-    print " # Success? ", ur10.go_to_joint_state(place_joint_goal)
-    is_gripperOpen()
-
-    print "============ Press `Enter` to execute a movement to rest joint state goal ..."
-    raw_input()
-    rest_joint_goal = [0, -2*pi/5, pi/2+0.2, -pi/4 - 2*pi/5 + pi/2, pi/2, -pi/4]
-    print " # Success? ", ur10.go_to_joint_state(rest_joint_goal)
-    
-    print "============ Press `Enter` to plan and display a Cartesian path ..."
-    raw_input()
-    cartesian_plan, planned_fraction = ur10.plan_cartesian_picking_path(scale=2)
-    print " # Planned fraction: {} ".format(planned_fraction)
-
-    if (planned_fraction == 1.0):
-      ur10.execute_plan(cartesian_plan)
-
-    print "============ Press `Enter` to add obj to scene and attach to robot ..."
-    raw_input()
-    ur10.add_box()
-    ur10.attach_box()
-
-    # Grip beveerage on rack
-    is_gripperClose()
-
-    print "============ Press `Enter` to plan and execute a path with an attached collision object ..."
-    raw_input()
-    cartesian_plan, planned_fraction = ur10.plan_cartesian_placing_path(scale=2)
-    print " # Planned fraction: {} ".format(planned_fraction)
-
-    if (planned_fraction == 1.0):
-      print ur10.execute_plan(cartesian_plan)
-
-    print "============ Press `Enter` to execute a movement to place beverage joint state goal ..."
-    raw_input()
-    place_joint_goal = [0, -pi/4, pi/2, -pi/4, pi/2, -pi/4]
-    print " # Success? ", ur10.go_to_joint_state(place_joint_goal)
-
-    gripper_InOut_payLoad()
-
-    print "============ Python demo complete! ========="
+      print(colored(" ============  Motion Completed!  =========", 'green'))
 
 
-  except rospy.ROSInterruptException:
-    return
-  except KeyboardInterrupt:
-    return
+    except rospy.ROSInterruptException:
+      return
+    except KeyboardInterrupt:
+      return
+
+
+############################################################################################
+############################################################################################
 
 
 if __name__ == '__main__':
-  
-  print "============ Begin the python moveit script by setting up the moveit_commander (press ctrl-d to exit) ..."
-  ur10 = armManipulation()   ## moveGroup  
-  main()
+  print(colored(" ----- Begin Python Moveit Script ----- " , 'white', 'on_red'))
+  robot_manipulator_control = RobotManipulatorManager()
+  robot_manipulator_control.load_motion_config( path="../config/motion_config.yaml" )
+  robot_manipulator_control.execute_motion()
