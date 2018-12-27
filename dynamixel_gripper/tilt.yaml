@@ -1,0 +1,29 @@
+LGrip_controller:
+    controller:
+        package: dynamixel_controllers
+        module: joint_position_controller
+        type: JointPositionController
+    joint_name: LGrip_joint
+    joint_speed: .5
+    motor:
+        id: 1
+        init: 0
+        min: 0
+        max: 4096
+        open_angle: 2.2355
+        close_angle: 3.1717
+
+RGrip_controller:
+    controller:
+        package: dynamixel_controllers
+        module: joint_position_controller
+        type: JointPositionController
+    joint_name: RGrip_joint
+    joint_speed: .5
+    motor:
+        id: 2
+        init: 0
+        min: 0
+        max: 4096
+        open_angle: 3.8009
+        close_angle: 2.7164

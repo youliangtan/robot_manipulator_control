@@ -32,13 +32,13 @@ from std_msgs.msg import Int32
 from ur10_rmf.msg import grip_state
 
 
-class ManipulatorControl():
+class RobotManipulatorControl():
   def __init__(self):
 
     rospy.init_node('ur10_motionPlanning', anonymous=True)
     rospy.Subscriber("gripper/state", grip_state, self.gripperState_callback)
     self.gripper_pub = rospy.Publisher('gripper/command', Int32, queue_size=10)
-    self.ur10 = armManipulation()   ## moveGroup  
+    self.ur10 = ArmManipulation()   ## moveGroup  
     self.gripper_state = -1
     self.rate = rospy.Rate(5) # 5hz
     self.enable_gripper = False
@@ -247,7 +247,7 @@ class ManipulatorControl():
 
 if __name__ == '__main__':
   print(colored("  -------- Begin Python Moveit Script --------  " , 'white', 'on_green'))
-  robot_manipulator_control = ManipulatorControl()
+  robot_manipulator_control = RobotManipulatorControl()
   robot_manipulator_control.load_motion_config( path="../config/motion_config.yaml" )
   robot_manipulator_control.execute_all_motion_group()
   

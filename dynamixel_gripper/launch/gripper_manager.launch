@@ -1,0 +1,36 @@
+<!-- -*- mode: XML -*- -->
+<!-- contains all nodes to be executed for gripper control -->
+
+<launch>
+    <node name="dynamixel_manager" pkg="dynamixel_controllers" type="controller_manager.py" required="true" output="screen">
+        <rosparam>
+            namespace: dxl_manager
+            serial_ports:
+                pan_tilt_port:
+                    port_name: "/dev/ttyUSB0"
+                    baud_rate: 1000000
+                    min_motor_id: 1
+                    max_motor_id: 25
+                    update_rate: 20
+        </rosparam>
+    </node>
+
+    <!-- Start tilt joint controller -->
+    <rosparam file="$(find dynamixel_gripper)/tilt.yaml" command="load"/>
+    <node name="tilt_controller_spawner" pkg="dynamixel_controllers" type="controller_spawner.py"
+          args="--manager=dxl_manager
+                --port pan_tilt_port
+                LGrip_controller
+                RGrip_controller"
+          output="screen"/>
+
+    <!-- Start grip controller -->
+    <node name="gripper_controller" pkg="dynamixel_gripper" type="GripperOpenClose.py"
+          args="LGrip_controller
+                RGrip_controller"/>
+
+    <!-- Start gripper load tracker -->
+    <!-- Wrapper for dynamixel motor load -->
+    <node name="gripper_load" pkg="dynamixel_gripper" type="getLoad.py"/>
+
+</launch>
