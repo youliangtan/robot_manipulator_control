@@ -105,7 +105,7 @@ Class `ManipulatorControl` simplfied the use of typing code to control the robot
 - **execute_motion_group(string motion_group_id)**  return True/False, True: success, False: fail
 - **execute_motion(string motion_id)**  return True/False, True: success, False: fail
 
-### armManipulation Class
+### ArmManipulation Class
 This class directly interact with the ROS `moveit` package. 
 
 - **go_to_joint_state(joint_goal, time_factor)** return `bool` (success anot)
