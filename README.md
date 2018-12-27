@@ -2,9 +2,9 @@
 (DEVELOPING) robot manipulator project, involved in using a UR10, 'self-made' dynamixel gripper.
 ROS1 and ROS2 will eventually be used in communication integration.
 
-- **UR10 arm Manipulation**: uses [ROS MOVEIT!](https://moveit.ros.org) in motion planning
+- **UR10 robot manipulator**: uses [ROS MOVEIT!](https://moveit.ros.org) in motion planning. Refer to `ur10_rmf` pkg.
 
-- **Dynamixel Gripper**: Refer to the `README.md` in the package folder
+- **Dynamixel Gripper**: Refer to the `README.md` in the package folder. Refer to 'dynamixel_gripper' pkg.
 
 ![alt text](/resources/ur10_with_gripper.png?)
 
@@ -91,8 +91,7 @@ rosrun ur10_rmf robot_manipulator_control.py
 - Comment `joint_state_publisher` node in `ur10_test.launch` will enable rviz ur10 to run with UR10 hardware 
 - refer to `dynamixel_gripper` package to run gripper with ur10
 - If wanna run with the gripper, pls refer to the package `readme.md` to run the launch file: `roslaunch dynamixel_gripper gripper_manager.roslaunch`
-
-
+- ur10 control is a higer level control of dynamixel gripper
 - Edit `enable_gripper` in .yaml file to `True` to enable usage of gripper
 - In the yaml file, the hierachy of each is: `motion_group` > `motion` > `cartesian_motion`.
 
