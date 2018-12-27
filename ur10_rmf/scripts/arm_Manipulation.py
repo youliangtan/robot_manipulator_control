@@ -191,10 +191,10 @@ class armManipulation(object):
     pose_goal.orientation = changeInOrientation( 0, pose_list[3],   # roll
                                                     pose_list[4],   # pitch
                                                     pose_list[5] )  # yaw
-    group.set_pose_target(pose_goal)
+    # group.set_pose_target(pose_goal)
 
     ## Planner to compute the plan and execute it.
-    plan = group.plan (joints = joint_goal)
+    plan = group.plan (joints = pose_goal)
     plan = controlArmVelocity(plan, numberOfWayPoints=len(plan.joint_trajectory.points), timeFactor=time_factor )
     group.execute(plan, wait=True)
     group.stop()
