@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 """
 =========================================================
 Creator: Tan You Liang
@@ -30,12 +31,13 @@ from std_msgs.msg import String
 from std_msgs.msg import Int32
 # from dynamixel_gripper.msg  import grip_state
 from ur10_rmf.msg import grip_state
+from ur10_rmf.msg import manipulator_state
 
 
 class RobotManipulatorControl():
   def __init__(self):
 
-    rospy.init_node('ur10_motionPlanning', anonymous=True)
+    rospy.init_node('robot_manipulator_control_node', anonymous=True)
     rospy.Subscriber("gripper/state", grip_state, self.gripperState_callback)
     self.gripper_pub = rospy.Publisher('gripper/command', Int32, queue_size=10)
     self.ur10 = ArmManipulation()   ## moveGroup  
@@ -43,12 +45,19 @@ class RobotManipulatorControl():
     self.rate = rospy.Rate(5) # 5hz
     self.enable_gripper = False
     self.yaml_obj = []
+    self.new_motion_request = False 
+    self.motion_request = 'Nan' 
 
 
   def gripperState_callback(self, data): 
     # rospy.loginfo( "I heard gripper state is {}".format(data.gripper_state))
     self.gripper_state = data.gripper_state
-      
+
+
+  def motionService_callback(self, data): 
+    self.motion_request = data 
+    self.new_motion_request = True 
+
 
   # Open gripper, TODO: return success or fail
   def open_gripper(self): 
@@ -241,6 +250,24 @@ class RobotManipulatorControl():
       return
 
 
+  """
+  Execute service for other nodes to call a specific motion group
+  """
+  def execute_motion_group_service(self):
+    rospy.Subscriber("/ur10/motion_group_id", String, self.motionService_callback)
+    RMC_pub = rospy.Publisher("/ur10/manipulator_state", manipulator_state, queue_size=10)
+    # TODO: fix interval pub of manipulator state
+
+    while(1):
+      # check if new request by user
+      if (self.new_motion_request == True):
+        print (" New Request!!!".format(self.motion_request) )
+        self.new_motion_request = False
+        robot_manipulator_control.execute_motion_group( self.motion_request )
+
+      self.rate.sleep()
+
+
 ############################################################################################
 ############################################################################################
 
@@ -251,6 +278,5 @@ if __name__ == '__main__':
   robot_manipulator_control.load_motion_config( path="../config/motion_config.yaml" )
   robot_manipulator_control.execute_all_motion_group()
   
-  # spin and wait for call back 
-
+  # robot_manipulator_control.execute_motion_group_service()
   # robot_manipulator_control.execute_motion_group("G5")

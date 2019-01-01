@@ -52,6 +52,7 @@ add_message_files(
    FILES
    grip_state.msg
    load_state.msg
+   manipulator_state.msg
 )
 
 ## Generate services in the 'srv' folder

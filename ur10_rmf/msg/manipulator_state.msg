@@ -1,0 +1,3 @@
+int8 gripper_state
+string arm_motion_state
+float32 arm_progress_state
