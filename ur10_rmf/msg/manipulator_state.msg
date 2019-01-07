@@ -1,3 +1,3 @@
-int8 gripper_state
-string arm_motion_state
-float32 arm_progress_state
+int8 gripper_state              # gripper's state, open/close/error
+string arm_motion_state         # state of the motion, show the current motion group being executed
+float32 arm_motion_progress     # indicate the progress of a group of motion, 0 means 0%, 1 means 100% completed

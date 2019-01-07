@@ -97,12 +97,12 @@ def controlArmVelocity(plan, numberOfWayPoints = 1, timeFactor=1):
 
 
 
-class armManipulation(object):
+class ArmManipulation(object):
 
   ## ------------------------------------- Start init -------------------------------------
 
   def __init__(self):
-    super(armManipulation, self).__init__()
+    super(ArmManipulation, self).__init__()
 
     moveit_commander.roscpp_initialize(sys.argv)
     robot = moveit_commander.RobotCommander()                 # outer-level interface to the robot
