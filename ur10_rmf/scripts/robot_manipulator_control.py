@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 """
 =========================================================
 Creator: Tan You Liang
@@ -23,32 +24,42 @@ import moveit_msgs.msg
 from moveit_commander.conversions import pose_to_list
 import geometry_msgs.msg
 import tf
-from arm_Manipulation import armManipulation
+from arm_manipulation import ArmManipulation
 
 from math import pi
 from std_msgs.msg import String
 from std_msgs.msg import Int32
 # from dynamixel_gripper.msg  import grip_state
 from ur10_rmf.msg import grip_state
+from ur10_rmf.msg import manipulator_state
 
 
 class RobotManipulatorControl():
   def __init__(self):
 
-    rospy.init_node('ur10_motionPlanning', anonymous=True)
+    rospy.init_node('robot_manipulator_control_node', anonymous=True)
     rospy.Subscriber("gripper/state", grip_state, self.gripperState_callback)
     self.gripper_pub = rospy.Publisher('gripper/command', Int32, queue_size=10)
     self.ur10 = ArmManipulation()   ## moveGroup  
     self.gripper_state = -1
+    self.arm_motion_state = ''
     self.rate = rospy.Rate(5) # 5hz
     self.enable_gripper = False
     self.yaml_obj = []
+    self.new_motion_request = False 
+    self.motion_request = 'Nan' 
+    self.motion_group_progress = -1.0
 
 
   def gripperState_callback(self, data): 
     # rospy.loginfo( "I heard gripper state is {}".format(data.gripper_state))
     self.gripper_state = data.gripper_state
-      
+
+
+  def motionService_callback(self, data): 
+    self.motion_request = data.data 
+    self.new_motion_request = True 
+
 
   # Open gripper, TODO: return success or fail
   def open_gripper(self): 
@@ -196,13 +207,16 @@ class RobotManipulatorControl():
     try:
       all_motion_groups = self.yaml_obj['motion_group']
       numOfMotionGroup = len(all_motion_groups)
+      self.motion_group_progress = 0
       for i in range(numOfMotionGroup):
         
         if ( all_motion_groups[i]['id'] == target_id):  # if found id
           motion_sequences = all_motion_groups[i]['sequence']
           # Loop thru each 'motion'
+          fraction = 1.0/len(motion_sequences)
           for motion_id in motion_sequences:
             self.execute_motion(motion_id)
+            self.motion_group_progress = self.motion_group_progress + fraction
           return True
       
     except KeyError, e:
@@ -241,16 +255,54 @@ class RobotManipulatorControl():
       return
 
 
+  """
+  Execute a service node to call a specific motion group
+   @Sub: '/ur10/motion_group_id', input group num id
+   @Pub: '/ur10/manipulator_state', current state of the manipulator
+  """
+  def execute_motion_group_service(self):
+    rospy.Subscriber("/ur10/motion_group_id", String, self.motionService_callback)
+    self.RMC_pub = rospy.Publisher("/ur10/manipulator_state", manipulator_state, queue_size=10)
+    rospy.Timer(rospy.Duration(0.5), timer_pub_callback)
+    print (colored(" ------ Running motion group service ------ ", 'green', attrs=['bold']))
+
+    while(1):
+      # check if new request by user
+      if (self.new_motion_request == True):
+        print (" [Service]:: New Motion Group Request!! : {} ".format(self.motion_request) )
+        self.new_motion_request = False
+        self.execute_motion_group( self.motion_request )
+
+      self.rate.sleep()
+
+
+# Pub Manipulator State, TBC
+def timer_pub_callback(event):
+
+    eef_pose = self.ur10.get_eef_pose()
+  
+    print ('Timer called at ' + str(event.current_real))
+    print (eef_pose)
+
+    msg = manipulator_state()
+    msg.gripper_state = self.gripper_state
+    msg.arm_motion_state = self.motion_request
+    msg.arm_motion_progress = self.motion_group_progress   # float, show fraction of completion
+  
+    self.RMC_pub.publish(msg)
+
+
 ############################################################################################
 ############################################################################################
+
 
 
 if __name__ == '__main__':
   print(colored("  -------- Begin Python Moveit Script --------  " , 'white', 'on_green'))
   robot_manipulator_control = RobotManipulatorControl()
   robot_manipulator_control.load_motion_config( path="../config/motion_config.yaml" )
-  robot_manipulator_control.execute_all_motion_group()
+  # robot_manipulator_control.execute_all_motion_group()
   
-  # spin and wait for call back 
-
+  robot_manipulator_control.execute_motion_group_service()
   # robot_manipulator_control.execute_motion_group("G5")
+  
