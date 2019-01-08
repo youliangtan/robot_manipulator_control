@@ -372,6 +372,10 @@ class ArmManipulation(object):
     # We wait for the planning scene to update.
     return self.wait_for_state_update(box_is_attached=False, box_is_known=False, timeout=timeout)
 
+  
+  def get_eef_pose(self):
+    return self.group.get_current_pose().pose
+
 
 
 

@@ -263,7 +263,7 @@ class RobotManipulatorControl():
   def execute_motion_group_service(self):
     rospy.Subscriber("/ur10/motion_group_id", String, self.motionService_callback)
     self.RMC_pub = rospy.Publisher("/ur10/manipulator_state", manipulator_state, queue_size=10)
-    rospy.Timer(rospy.Duration(0.5), timer_pub_callback)
+    rospy.Timer(rospy.Duration(0.5), self.timer_pub_callback)
     print (colored(" ------ Running motion group service ------ ", 'green', attrs=['bold']))
 
     while(1):
@@ -276,20 +276,28 @@ class RobotManipulatorControl():
       self.rate.sleep()
 
 
-# Pub Manipulator State, TBC
-def timer_pub_callback(event):
+  # Timer to pub Manipulator` State in every interval
+  # *Note: when motion is executing, ros callback is being blocked
+  def timer_pub_callback(self, event):
 
-    eef_pose = self.ur10.get_eef_pose()
-  
-    print ('Timer called at ' + str(event.current_real))
-    print (eef_pose)
+      eef_pose = self.ur10.get_eef_pose()
+    
+      print ('[CallBack] pub timer called at: ' + str(event.current_real))
+      qua = [ eef_pose.orientation.x, eef_pose.orientation.y, eef_pose.orientation.z, eef_pose.orientation.w]
+      (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(qua)
 
-    msg = manipulator_state()
-    msg.gripper_state = self.gripper_state
-    msg.arm_motion_state = self.motion_request
-    msg.arm_motion_progress = self.motion_group_progress   # float, show fraction of completion
-  
-    self.RMC_pub.publish(msg)
+      msg = manipulator_state()
+      msg.gripper_state = self.gripper_state
+      msg.arm_motion_state = self.motion_request
+      msg.arm_motion_progress = self.motion_group_progress   # float, show fraction of completion
+      msg.x = eef_pose.position.x
+      msg.y = eef_pose.position.y
+      msg.z = eef_pose.position.z
+      msg.roll = roll
+      msg.pitch = pitch
+      msg.yaw = yaw
+
+      self.RMC_pub.publish(msg)
 
 
 ############################################################################################

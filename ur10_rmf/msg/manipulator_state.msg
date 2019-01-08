@@ -6,6 +6,6 @@ float32 arm_motion_progress     # indicate the progress of a group of motion, 0 
 float32 x
 float32 y
 float32 z
-float32 r
-float32 p
-float32 y
+float32 roll
+float32 pitch
+float32 yaw
