@@ -262,7 +262,8 @@ class RobotManipulatorControl():
   """
   def execute_motion_group_service(self):
     rospy.Subscriber("/ur10/motion_group_id", String, self.motionService_callback)
-    RMC_pub = rospy.Publisher("/ur10/manipulator_state", manipulator_state, queue_size=10)
+    self.RMC_pub = rospy.Publisher("/ur10/manipulator_state", manipulator_state, queue_size=10)
+    rospy.Timer(rospy.Duration(0.5), timer_pub_callback)
     print (colored(" ------ Running motion group service ------ ", 'green', attrs=['bold']))
 
     while(1):
@@ -270,18 +271,25 @@ class RobotManipulatorControl():
       if (self.new_motion_request == True):
         print (" [Service]:: New Motion Group Request!! : {} ".format(self.motion_request) )
         self.new_motion_request = False
-        robot_manipulator_control.execute_motion_group( self.motion_request )
+        self.execute_motion_group( self.motion_request )
 
-      # Pub Manipulator State, TBC
-      msg = manipulator_state()
-      msg.gripper_state = self.gripper_state
-      msg.arm_motion_state = self.motion_request
-      msg.arm_motion_progress = self.motion_group_progress   # float, show fraction of completion
-      RMC_pub.publish(msg)
-
-      # rospy.spinOnce(self) # block until one callback is run
       self.rate.sleep()
 
+
+# Pub Manipulator State, TBC
+def timer_pub_callback(event):
+
+    eef_pose = self.ur10.get_eef_pose()
+  
+    print ('Timer called at ' + str(event.current_real))
+    print (eef_pose)
+
+    msg = manipulator_state()
+    msg.gripper_state = self.gripper_state
+    msg.arm_motion_state = self.motion_request
+    msg.arm_motion_progress = self.motion_group_progress   # float, show fraction of completion
+  
+    self.RMC_pub.publish(msg)
 
 
 ############################################################################################
