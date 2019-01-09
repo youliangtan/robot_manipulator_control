@@ -82,6 +82,7 @@ roslaunch ur10_moveit_config ur10_moveit_planning_execution.launch limited:=true
 #### 4) Run Script
 ```
 rosrun ur10_rmf robot_manipulator_control.py
+rostopic pub /ur10/motion_group_id std_msgs/String "INPUT" #INPUT: G1, G2... 
 
 ```
 
