@@ -97,7 +97,7 @@ rostopic pub /ur10/motion_group_id std_msgs/String "INPUT" #INPUT: G1, G2...
 - In the yaml file, the hierachy of each is: `motion_group` > `motion` > `cartesian_motion`.
 
 
-# Into the Code
+# Code Explanation
 
 ### ManipulatorControl Class
 Class `ManipulatorControl` simplfied the use of typing code to control the robot manipulator. This helps user to create a series of motion just by edit the `motion_config.yaml` file. 3 useful functions in this class are:
