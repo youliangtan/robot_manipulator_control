@@ -3,6 +3,8 @@
 # This script gets the current load in each servo and publishes the average load as a rostopic
 # Created by Poh Yong Keat 2018
 
+# TODO: change msg name convention: load_state -> LoadState
+
 import rospy
 from std_msgs.msg import Float64
 from dynamixel_msgs.msg import MotorStateList

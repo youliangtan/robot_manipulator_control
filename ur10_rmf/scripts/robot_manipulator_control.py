@@ -31,7 +31,7 @@ from std_msgs.msg import String
 from std_msgs.msg import Int32
 # from dynamixel_gripper.msg  import grip_state
 from ur10_rmf.msg import grip_state
-from ur10_rmf.msg import manipulator_state
+from ur10_rmf.msg import ManipulatorState
 
 
 class RobotManipulatorControl():
@@ -43,7 +43,7 @@ class RobotManipulatorControl():
     self.ur10 = ArmManipulation()   ## moveGroup  
     self.gripper_state = -1
     self.arm_motion_state = ''
-    self.rate = rospy.Rate(5) # 5hz
+    self.rate = rospy.Rate(6) # 6hz
     self.enable_gripper = False
     self.yaml_obj = []
     self.new_motion_request = False 
@@ -217,6 +217,7 @@ class RobotManipulatorControl():
           for motion_id in motion_sequences:
             self.execute_motion(motion_id)
             self.motion_group_progress = self.motion_group_progress + fraction
+            self.rate.sleep()
           return True
       
     except KeyError, e:
@@ -262,7 +263,7 @@ class RobotManipulatorControl():
   """
   def execute_motion_group_service(self):
     rospy.Subscriber("/ur10/motion_group_id", String, self.motionService_callback)
-    self.RMC_pub = rospy.Publisher("/ur10/manipulator_state", manipulator_state, queue_size=10)
+    self.RMC_pub = rospy.Publisher("/ur10/manipulator_state", ManipulatorState, queue_size=10)
     rospy.Timer(rospy.Duration(0.5), self.timer_pub_callback)
     print (colored(" ------ Running motion group service ------ ", 'green', attrs=['bold']))
 
@@ -286,7 +287,7 @@ class RobotManipulatorControl():
       qua = [ eef_pose.orientation.x, eef_pose.orientation.y, eef_pose.orientation.z, eef_pose.orientation.w]
       (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(qua)
 
-      msg = manipulator_state()
+      msg = ManipulatorState()
       msg.gripper_state = self.gripper_state
       msg.arm_motion_state = self.motion_request
       msg.arm_motion_progress = self.motion_group_progress   # float, show fraction of completion
