@@ -30,8 +30,8 @@ from math import pi
 from std_msgs.msg import String
 from std_msgs.msg import Int32
 # from dynamixel_gripper.msg  import grip_state
-from ur10_rmf.msg import grip_state
-from ur10_rmf.msg import ManipulatorState
+from rm_msgs.msg import grip_state
+from rm_msgs.msg import ManipulatorState
 
 
 class RobotManipulatorControl():
