@@ -114,3 +114,11 @@ This class directly interact with the ROS `moveit` package.
 - **go_to_pose_goal(self, pose_list, time_factor )** return `bool` (success anot)
 - **plan_cartesian_path(self, motion_list, time_factor)** return `obj`, `float`  (planned trajectory, success fraction, 1.0 is successful planning )
 - **execute_plan(self, plan)** return `bool` (success anot)
+
+### Pub Sub for execute_group_service
+
+**Sub**: 
+- /ur10/motion_group_id: Group ID (string)
+**Pub**: 
+- /ur10/manipulator_state: State of arm and gripper (custom msg)
+- /ur10/rm_bridge_state: same as above's state, temp solution to feed to ros bridge (float32_array)

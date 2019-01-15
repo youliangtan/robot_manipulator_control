@@ -29,6 +29,7 @@ from arm_manipulation import ArmManipulation
 from math import pi
 from std_msgs.msg import String
 from std_msgs.msg import Int32
+from std_msgs.msg import Float32MultiArray # temp solution
 # from dynamixel_gripper.msg  import grip_state
 from rm_msgs.msg import grip_state
 from rm_msgs.msg import ManipulatorState
@@ -264,6 +265,7 @@ class RobotManipulatorControl():
   def execute_motion_group_service(self):
     rospy.Subscriber("/ur10/motion_group_id", String, self.motionService_callback)
     self.RMC_pub = rospy.Publisher("/ur10/manipulator_state", ManipulatorState, queue_size=10)
+    self.rm_bridge_pub = rospy.Publisher("/ur10/rm_bridge_state", Float32MultiArray, queue_size=10) # Temp Solution for RMC Pub
     rospy.Timer(rospy.Duration(0.5), self.timer_pub_callback)
     print (colored(" ------ Running motion group service ------ ", 'green', attrs=['bold']))
 
@@ -299,6 +301,29 @@ class RobotManipulatorControl():
       msg.yaw = yaw
 
       self.RMC_pub.publish(msg)
+
+      # TODO: temp solution to pub to ros1_ros2_bridge
+      msg = Float32MultiArray()
+
+      motion_group_num = self.motion_request[1:] # convert: e.g. 'G23' to 23
+      if (motion_group_num.isdigit()):
+        motion_group_num = float(motion_group_num)
+      else:
+        motion_group_num = -1.0
+      msg.data =  [ self.gripper_state, 
+                    motion_group_num, 
+                    self.motion_group_progress, 
+                    eef_pose.position.x,
+                    eef_pose.position.y,
+                    eef_pose.position.z,
+                    roll,
+                    pitch,
+                    yaw ]
+      self.rm_bridge_pub.publish(msg)
+              
+
+
+
 
 
 ############################################################################################

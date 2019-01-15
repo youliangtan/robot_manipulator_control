@@ -15,19 +15,21 @@ enable_gripper: False
 
 # Group of Motions for execution in sequence
 motion_group:
-  - { id: G1, sequence: [M3, M2] }
-  - { id: G2, sequence: [M4] }
-  - { id: G3, sequence: [M5, M1] } # cartesian picking
-  - { id: G4, sequence: [M6, M3] } # cartesian placing
-  - { id: G5, sequence: [M7, M2] } # insert bevereage into payload
-  - { id: G6, sequence: [M8] }
+  - { id: G1, sequence: [M3, M4, M2] } # move to 2 rest stops
+  - { id: G2, sequence: [M4] }      # null
+  - { id: G3, sequence: [M5, M1] } # rest 2 to cartesian picking
+  - { id: G4, sequence: [M6, M3] } # cartesian pick to rest
+  - { id: G5, sequence: [M7, M2] } # insert bevereage into payload #TO_BE_REMOVED
+  - { id: G6, sequence: [M2, M8, M4] } # beverage mech to rest 2
+  - { id: G7, sequence: [M6, M3, M7]}  # Pick to beverage mech
+  - { id: G8, sequence: [M8, M3, M7]}  # beverage mech to payload #todo
 
 # Specific Motion
 motion:
   M1: { type: eef_grip_obj }
   M2: { type: eef_release_obj }
-  M3: { type: joint_goal, data: [0, -0.7854, 1.571,  -0.7854, 1.571, -0.7854], timeFactor: 2 }   #0, -pi/4, pi/2, -pi/4, pi/2, -pi/4
-  M4: { type: joint_goal, data: [0, -1.2566, 1.7708, -0.4712, 1.571, -0.7854], timeFactor: 2 }   #0, -2*pi/5, pi/2+0.2, -pi/4-2*pi/5+pi/2, pi/2, -pi/4
+  M3: { type: joint_goal, data: [0, -0.7854, 1.571,  -0.7854, 1.571, -0.7854], timeFactor: 2 }   #Rest1: 0, -pi/4, pi/2, -pi/4, pi/2, -pi/4
+  M4: { type: joint_goal, data: [0, -1.2566, 1.7708, -0.4712, 1.571, -0.7854], timeFactor: 2 }   #Rest2: 0, -2*pi/5, pi/2+0.2, -pi/4-2*pi/5+pi/2, pi/2, -pi/4
   M5: { type: cartesian, sequence: [C1,C2,C3], timeFactor: 2 }
   M6: { type: cartesian, sequence: [-C3,-C2,-C1], timeFactor: 2 }
   M7: { type: cartesian, sequence: [C4], timeFactor: 2 }
