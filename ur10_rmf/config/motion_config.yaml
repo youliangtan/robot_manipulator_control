@@ -6,6 +6,8 @@
 #         Cartesian planning -> Relative position
 # * TimeFactor: Duration of motion increases (speed decreases) when factor inceases
 #
+# rest2 -> cabinet ->bev machine -> robot -> rest2
+# G1 -> G9 -> G10 -> G7 -> G6 
 #############################################################
 
 
@@ -17,12 +19,12 @@ enable_gripper: False
 motion_group:
   - { id: G1, sequence: [M3, M4, M2] } # move to 2 rest stops
   - { id: G2, sequence: [M4] }      # null
-  - { id: G3, sequence: [M5, M1] } # rest 2 to cartesian picking
-  - { id: G4, sequence: [M6, M3] } # cartesian pick to rest
-  - { id: G5, sequence: [M7, M2] } # insert bevereage into payload #TO_BE_REMOVED
-  - { id: G6, sequence: [M2, M8, M4] } # beverage mech to rest 2
-  - { id: G7, sequence: [M6, M3, M7]}  # Pick to beverage mech
-  - { id: G8, sequence: [M8, M3, M7]}  # beverage mech to payload #todo
+  - { id: G3, sequence: [M5, M1] } # rest 2 to beverage machine
+  - { id: G4, sequence: [M6, M3] } # beverage machine to rest 1
+  - { id: G6, sequence: [M2, -M7, M4] } # payload to rest 2
+  - { id: G7, sequence: [M6, M3, M7, M2]}  # Pick to beverage mech
+  - { id: G9, sequence: [M9, M10, M1]}  # from rest 2 to cup cabinet
+  - { id: G10, sequence: [-M10, M4, M5]}  # cup cabinet to beverage machine
 
 # Specific Motion
 motion:
@@ -33,7 +35,8 @@ motion:
   M5: { type: cartesian, sequence: [C1,C2,C3], timeFactor: 2 }
   M6: { type: cartesian, sequence: [-C3,-C2,-C1], timeFactor: 2 }
   M7: { type: cartesian, sequence: [C4], timeFactor: 2 }
-  M8: { type: cartesian, sequence: [-C4], timeFactor: 2 }
+  M9: { type: joint_goal, data: [-1.571, -1.7566, 1.4908, 0.2712, 1.571, -0.7854], timeFactor: 2 }   #Rest3
+  M10: { type: cartesian, sequence: [C5], timeFactor: 2 } # y-axis moves in
 
 # Cartesian Motion, in `xyzrpy`
 cartesian_motion:
@@ -41,3 +44,4 @@ cartesian_motion:
   C2: [ -0.2, 0.4, 0, 0, 0, 0.785]  #45degree yaw
   C3: [ 0.12, 0.12, 0, 0, 0, 0]
   C4: [ 0.15, 0, 0, 0, 0, 0]
+  C5: [ 0, -0.3, 0, 0, 0, 0]  #insert to drawer

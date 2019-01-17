@@ -115,26 +115,34 @@ class RobotManipulatorControl():
   
 
   # Manage cartesian motion sequence from .yaml 
-  def manage_cartesian_motion_list(self, cartesian_motion):
+  # motion_coeff: higher level coeff from motion group sequence
+  def manage_cartesian_motion_list(self, cartesian_motion, motion_coeff):
     motion_list = []
 
     for cartesian_id in cartesian_motion:
       # Support cooficient handling
-      char_idx = cartesian_id.find('C')
-      filtered_cartesian_id = cartesian_id[char_idx:len(cartesian_id)]
-      coefficient = cartesian_id[0:char_idx]
+      cartesian_coeff, filtered_cartesian_id = self.get_coeff_from_id(ch='C', id=cartesian_id)
       cartesian_data = self.yaml_obj['cartesian_motion'][filtered_cartesian_id]
-      
-      if (len(coefficient)> 0 ): # check if theres cooficient infront of Cartesian motion
-        if (coefficient == '-'):
-          coefficient = -1
-        else:
-          coefficient = float(coefficient)
-        cartesian_data = map(lambda x: x *coefficient, cartesian_data)
-      
+      cartesian_data = map(lambda x: x*cartesian_coeff*motion_coeff, cartesian_data)
       motion_list.append(cartesian_data)
 
     return motion_list
+
+
+  # get coefficient from a motion id or cartesian id
+  def get_coeff_from_id(self, ch, id):
+    char_idx = id.find(ch)
+    filtered_id = id[char_idx:len(id)]
+    coefficient = id[0:char_idx]
+
+    if (len(coefficient)> 0 ): # check if theres cooficient infront of Cartesian motion
+      if (coefficient == '-'):
+        coefficient = -1
+      else:
+        coefficient = float(coefficient)
+    else:
+      coefficient = 1
+    return (coefficient, filtered_id)
 
 
   """ 
@@ -142,7 +150,7 @@ class RobotManipulatorControl():
   @Input: String, motion_id 
   @Return: Bool, Success? 
   """
-  def execute_motion(self, motion_id):
+  def execute_motion(self, motion_id, coeff):
     try:
       motion_descriptor = self.yaml_obj['motion'][motion_id]
       motion_type = motion_descriptor['type']
@@ -165,7 +173,7 @@ class RobotManipulatorControl():
       elif ( motion_type == 'cartesian'):
         motion_time_factor = motion_descriptor['timeFactor']
         motion_sequence = motion_descriptor['sequence']
-        cartesian_motion_list = self.manage_cartesian_motion_list( motion_sequence )
+        cartesian_motion_list = self.manage_cartesian_motion_list( motion_sequence, coeff )
 
         cartesian_plan, planned_fraction = self.ur10.plan_cartesian_path(cartesian_motion_list, motion_time_factor)
         print(" -- Planned fraction: {} ".format(planned_fraction))
@@ -216,7 +224,9 @@ class RobotManipulatorControl():
           # Loop thru each 'motion'
           fraction = 1.0/len(motion_sequences)
           for motion_id in motion_sequences:
-            self.execute_motion(motion_id)
+            # find -1 in motion sequences
+            coeff, filtered_motion_id = self.get_coeff_from_id(ch='M', id=motion_id)
+            self.execute_motion(filtered_motion_id, coeff)
             self.motion_group_progress = self.motion_group_progress + fraction
             self.rate.sleep()
           return True
@@ -266,7 +276,7 @@ class RobotManipulatorControl():
     rospy.Subscriber("/ur10/motion_group_id", String, self.motionService_callback)
     self.RMC_pub = rospy.Publisher("/ur10/manipulator_state", ManipulatorState, queue_size=10)
     self.rm_bridge_pub = rospy.Publisher("/ur10/rm_bridge_state", Float32MultiArray, queue_size=10) # Temp Solution for RMC Pub
-    rospy.Timer(rospy.Duration(0.5), self.timer_pub_callback)
+    rospy.Timer(rospy.Duration(0.8), self.timer_pub_callback)
     print (colored(" ------ Running motion group service ------ ", 'green', attrs=['bold']))
 
     while(1):
@@ -288,7 +298,9 @@ class RobotManipulatorControl():
       print ('[CallBack] pub timer called at: ' + str(event.current_real))
       qua = [ eef_pose.orientation.x, eef_pose.orientation.y, eef_pose.orientation.z, eef_pose.orientation.w]
       (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(qua)
+      print ("Eef_pose: [%.2f,%.2f,%.2f,%.2f,%.2f,%.2f]" %(eef_pose.position.x, eef_pose.position.y, eef_pose.position.z, roll, pitch, yaw))
 
+      # Send rm_msgs
       msg = ManipulatorState()
       msg.gripper_state = self.gripper_state
       msg.arm_motion_state = self.motion_request
@@ -299,12 +311,10 @@ class RobotManipulatorControl():
       msg.roll = roll
       msg.pitch = pitch
       msg.yaw = yaw
-
       self.RMC_pub.publish(msg)
 
       # TODO: temp solution to pub to ros1_ros2_bridge
       msg = Float32MultiArray()
-
       motion_group_num = self.motion_request[1:] # convert: e.g. 'G23' to 23
       if (motion_group_num.isdigit()):
         motion_group_num = float(motion_group_num)
