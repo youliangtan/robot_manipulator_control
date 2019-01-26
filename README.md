@@ -80,7 +80,7 @@ rosrun ur10_rmf robot_manipulator_control.py
 
 #### Config on UR10 GUI
 config IP, create IP for UR10 in ubuntu connection, different ip num for the 4th unmasked session, `192.168.88.XXX` (e.g: `192.168.88.222`)
-Then Try to ping the connection 192.168.88.70 (robot’s)
+Then Try to ping the connection 192.168.88.70 (depends on robot’s ip)
 
 
 #### 1) Bring up connection between PC and UR10
@@ -106,8 +106,34 @@ rostopic pub /ur10/motion_group_id std_msgs/String "INPUT" #INPUT: G1, G2...
 
 ```
 
-#### Note on ur10 hardware
- 
+# Code Explanation
+
+### ManipulatorControl Class
+Class `ManipulatorControl` simplfied the use of typing code to control the robot manipulator. This helps user to create a series of motion just by edit the `motion_config.yaml` file. 3 useful functions in this class are:
+
+- **execute_all_motion_group()**, 
+- **execute_motion_group(string motion_group_id)**  return True/False, True: success, False: fail
+- **execute_motion(string motion_id)**  return True/False, True: success, False: fail
+- **execute_motion_group_service()**
+
+### ArmManipulation Class
+This class directly interact with the ROS `moveit` package. 
+
+- **go_to_joint_state(joint_goal, time_factor)** return `bool` (success anot)
+- **go_to_pose_goal(self, pose_list, time_factor )** return `bool` (success anot)
+- **plan_cartesian_path(self, motion_list, time_factor)** return `obj`, `float`  (planned trajectory, success fraction, 1.0 is successful planning )
+- **execute_plan(self, plan)** return `bool` (success anot)
+
+### Pub Sub for execute_group_service()
+Use `ur10.execute_motion_group_service()` to start ros service, which request group_id to user.
+
+**Sub**: 
+- /ur10/motion_group_id: Group ID (string)
+
+**Pub**: 
+- /ur10/manipulator_state: State of arm and gripper (custom msg)
+- /ur10/rm_bridge_state: same as above's state, temp solution to feed to ros bridge (float32_array)
+
 
 
 ### More Notes
@@ -119,30 +145,4 @@ rostopic pub /ur10/motion_group_id std_msgs/String "INPUT" #INPUT: G1, G2...
 - ur10 control is a higer level control of dynamixel gripper
 - Edit `enable_gripper` in .yaml file to `True` to enable usage of gripper
 - In the yaml file, the hierachy of each is: `motion_group` > `motion` > `cartesian_motion`.
-
-
-# Code Explanation
-
-### ManipulatorControl Class
-Class `ManipulatorControl` simplfied the use of typing code to control the robot manipulator. This helps user to create a series of motion just by edit the `motion_config.yaml` file. 3 useful functions in this class are:
-
-- **execute_all_motion_group()**, 
-- **execute_motion_group(string motion_group_id)**  return True/False, True: success, False: fail
-- **execute_motion(string motion_id)**  return True/False, True: success, False: fail
-- **execute_motion_group_service**
-
-### ArmManipulation Class
-This class directly interact with the ROS `moveit` package. 
-
-- **go_to_joint_state(joint_goal, time_factor)** return `bool` (success anot)
-- **go_to_pose_goal(self, pose_list, time_factor )** return `bool` (success anot)
-- **plan_cartesian_path(self, motion_list, time_factor)** return `obj`, `float`  (planned trajectory, success fraction, 1.0 is successful planning )
-- **execute_plan(self, plan)** return `bool` (success anot)
-
-### Pub Sub for execute_group_service
-
-**Sub**: 
-- /ur10/motion_group_id: Group ID (string)
-**Pub**: 
-- /ur10/manipulator_state: State of arm and gripper (custom msg)
-- /ur10/rm_bridge_state: same as above's state, temp solution to feed to ros bridge (float32_array)
+- Use execute_motion_group_service to check printout of `current 6 joints` and `current eef pose`, this helps in configuring the motion yaml
