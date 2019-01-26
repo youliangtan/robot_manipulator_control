@@ -106,7 +106,7 @@ rostopic pub /ur10/motion_group_id std_msgs/String "INPUT" #INPUT: G1, G2...
 
 ```
 
-# Code Explanation
+## Code Explanation
 
 ### ManipulatorControl Class
 Class `ManipulatorControl` simplfied the use of typing code to control the robot manipulator. This helps user to create a series of motion just by edit the `motion_config.yaml` file. 3 useful functions in this class are:
@@ -136,7 +136,7 @@ Use `ur10.execute_motion_group_service()` to start ros service, which request gr
 
 
 
-### More Notes
+## More Notes
 - Kinetic will have prob on using `ur_modern_driver`, so need to find fork copy:
 	https://github.com/iron-ox/ur_modern_driver/tree/iron-kinetic-devel
 - Comment `joint_state_publisher` node in `ur10_test.launch` will enable rviz ur10 to run with UR10 hardware 
