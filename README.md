@@ -17,14 +17,13 @@ Here, step-by-step instructions are listed here to guide user on how to setup th
 According to http://wiki.ros.org/ur10_moveit_config
 ```
 sudo apt-get install ros-kinetic-ur10-moveit-config
+
 ```
 
 3) MoveIt Install 
 ```
 sudo apt-get install ros-indigo-moveit
 ```
-* for kinetic:
-	https://github.com/iron-ox/ur_modern_driver/tree/iron-kinetic-devel
 
 3) Install Package
 ```
@@ -33,6 +32,27 @@ roscd ur10_rmf/scripts
 chmod +x robot_manipulator_control.py
 source ~/xxx/devel/setup.bash
 ```
+
+#### ** 4) If Interfacing with UR10 hardware
+4.1) ur_msgs Install
+```
+sudo apt-get install ros-kinetic-ur-msgs    # to interface with hardware
+```
+
+4.2) 'ur_modern_driver' build
+```
+git clone https://github.com/iron-ox/ur_modern_driver
+git checkout iron-kinetic-devel` # if using kenetic
+catkin_make --pkg ur_modern_driver
+```
+
+4.3) Disable mock joint state pub
+```
+roscd ur10_rmf
+nano launch/ur10_test.launch
+```
+- comment `joint_state_publisher` node in `ur10_test.launch` will enable rviz ur10 to run with UR10 hardware
+
 
 ## Run Demo Script
 
@@ -48,7 +68,7 @@ Once done, run the script to visualize the motion control.
 rosrun ur10_rmf robot_manipulator_control.py
 ```
 
-### Note
+#### Note
 - uncomment `joint_state_publisher` node in `ur10_test.launch` will enable rviz ur10 to run without UR10 hardware 
 - Change planning between: STOMP, CHOMP, OMPL
 - If select STOMP planner, build package from [industrial moveit](https://github.com/ros-industrial/industrial_moveit)
@@ -59,7 +79,7 @@ rosrun ur10_rmf robot_manipulator_control.py
 ## Run On UR10 hardware
 
 #### Config on UR10 GUI
-config IP, create IP for UR10 in ubuntu connection, different port num, e.g: 192.168.88.222
+config IP, create IP for UR10 in ubuntu connection, different ip num for the 4th unmasked session, `192.168.88.XXX` (e.g: `192.168.88.222`)
 Then Try to ping the connection 192.168.88.70 (robot’s)
 
 
@@ -86,7 +106,11 @@ rostopic pub /ur10/motion_group_id std_msgs/String "INPUT" #INPUT: G1, G2...
 
 ```
 
-### Note
+#### Note on ur10 hardware
+ 
+
+
+### More Notes
 - Kinetic will have prob on using `ur_modern_driver`, so need to find fork copy:
 	https://github.com/iron-ox/ur_modern_driver/tree/iron-kinetic-devel
 - Comment `joint_state_publisher` node in `ur10_test.launch` will enable rviz ur10 to run with UR10 hardware 

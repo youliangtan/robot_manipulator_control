@@ -150,7 +150,7 @@ class RobotManipulatorControl():
   @Input: String, motion_id 
   @Return: Bool, Success? 
   """
-  def execute_motion(self, motion_id, coeff):
+  def execute_motion(self, motion_id, coeff=1):
     try:
       motion_descriptor = self.yaml_obj['motion'][motion_id]
       motion_type = motion_descriptor['type']
@@ -226,7 +226,7 @@ class RobotManipulatorControl():
           for motion_id in motion_sequences:
             # find -1 in motion sequences
             coeff, filtered_motion_id = self.get_coeff_from_id(ch='M', id=motion_id)
-            self.execute_motion(filtered_motion_id, coeff)
+            self.execute_motion(filtered_motion_id, coeff=coeff)
             self.motion_group_progress = self.motion_group_progress + fraction
             self.rate.sleep()
           return True
@@ -257,7 +257,9 @@ class RobotManipulatorControl():
 
         # Loop thru each 'motion'
         for motion_id in motion_sequences:
-          self.execute_motion(motion_id)
+          # find coeff infront of motionID
+          coeff, filtered_motion_id = self.get_coeff_from_id(ch='M', id=motion_id)
+          self.execute_motion(filtered_motion_id, coeff)
 
       print(colored(" ===================  Motion Completed!  ===================", 'green'))
 
@@ -294,11 +296,13 @@ class RobotManipulatorControl():
   def timer_pub_callback(self, event):
 
       eef_pose = self.ur10.get_eef_pose()
-    
+      arm_joints = self.ur10.get_arm_joints()
+
       print ('[CallBack] pub timer called at: ' + str(event.current_real))
       qua = [ eef_pose.orientation.x, eef_pose.orientation.y, eef_pose.orientation.z, eef_pose.orientation.w]
       (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(qua)
       print ("Eef_pose: [%.2f,%.2f,%.2f,%.2f,%.2f,%.2f]" %(eef_pose.position.x, eef_pose.position.y, eef_pose.position.z, roll, pitch, yaw))
+      print ("Arm Joints: {%.3f,%.3f,%.3f,%.3f,%.3f,%.3f}" %(arm_joints[0], arm_joints[1], arm_joints[2], arm_joints[3], arm_joints[4], arm_joints[5]))
 
       # Send rm_msgs
       msg = ManipulatorState()
@@ -345,8 +349,8 @@ if __name__ == '__main__':
   print(colored("  -------- Begin Python Moveit Script --------  " , 'white', 'on_green'))
   robot_manipulator_control = RobotManipulatorControl()
   robot_manipulator_control.load_motion_config( path="../config/motion_config.yaml" )
-  # robot_manipulator_control.execute_all_motion_group()
-  
-  robot_manipulator_control.execute_motion_group_service()
+  robot_manipulator_control.execute_all_motion_group()
+
+  # robot_manipulator_control.execute_motion_group_service()
   # robot_manipulator_control.execute_motion_group("G5")
   

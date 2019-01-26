@@ -125,6 +125,7 @@ class ArmManipulation(object):
     self.eef_link = group.get_end_effector_link()
     self.group_names = robot.get_group_names()
 
+
     ## Printing Basic Information
     print (colored(" --Reference frame: {}".format(self.planning_frame), "yellow"))
     print (colored(" --End effector: {}".format(self.eef_link), "yellow"))
@@ -376,6 +377,8 @@ class ArmManipulation(object):
   def get_eef_pose(self):
     return self.group.get_current_pose().pose
 
+  def get_arm_joints(self):
+    return self.group.get_current_joint_values()
 
 
 
