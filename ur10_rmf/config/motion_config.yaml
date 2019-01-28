@@ -19,7 +19,7 @@ enable_gripper: False
 motion_group:
   # - { id: G2, sequence: [M9] } # Test Motion Group
   - { id: G1, sequence: [M3, M4, M2] } # move to rest stop 1 then 2
-  # - { id: G2, sequence: [M4] }      # null
+  - { id: G2, sequence: [M4, M2] }      # null: directly to rest 2
   # - { id: G3, sequence: [M5, M1] } # rest 2 to beverage machine
   # - { id: G4, sequence: [M6, M3] } # beverage machine to rest 1
   - { id: G9, sequence: [M9, M10, M1]}  # from rest 2 to rest 3  then cup cabinet

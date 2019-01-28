@@ -49,7 +49,7 @@ class RobotManipulatorControl():
     self.yaml_obj = []
     self.new_motion_request = False 
     self.motion_request = 'Nan' 
-    self.motion_group_progress = -1.0
+    self.motion_group_progress = 1.0
 
 
   def gripperState_callback(self, data): 
@@ -278,7 +278,7 @@ class RobotManipulatorControl():
     rospy.Subscriber("/ur10/motion_group_id", String, self.motionService_callback)
     self.RMC_pub = rospy.Publisher("/ur10/manipulator_state", ManipulatorState, queue_size=10)
     self.rm_bridge_pub = rospy.Publisher("/ur10/rm_bridge_state", Float32MultiArray, queue_size=10) # Temp Solution for RMC Pub
-    rospy.Timer(rospy.Duration(0.8), self.timer_pub_callback)
+    rospy.Timer(rospy.Duration(1.5), self.timer_pub_callback)
     print (colored(" ------ Running motion group service ------ ", 'green', attrs=['bold']))
 
     while(1):
@@ -349,8 +349,8 @@ if __name__ == '__main__':
   print(colored("  -------- Begin Python Moveit Script --------  " , 'white', 'on_green'))
   robot_manipulator_control = RobotManipulatorControl()
   robot_manipulator_control.load_motion_config( path="../config/motion_config.yaml" )
-  robot_manipulator_control.execute_all_motion_group()
 
-  # robot_manipulator_control.execute_motion_group_service()
+  # robot_manipulator_control.execute_all_motion_group()
+  robot_manipulator_control.execute_motion_group_service()
   # robot_manipulator_control.execute_motion_group("G5")
   
