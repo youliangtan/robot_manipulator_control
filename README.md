@@ -98,6 +98,7 @@ roslaunch ur10_rmf ur10_test.launch
 ```
 roslaunch ur10_moveit_config ur10_moveit_planning_execution.launch limited:=true
 ```
+* Step 1,2,3 combined: `roslaunch ur10_rmf ur10_hardware.launch`
 
 #### 4) Run Script
 ```
