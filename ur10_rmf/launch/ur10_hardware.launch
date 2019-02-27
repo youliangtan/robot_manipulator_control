@@ -14,8 +14,9 @@
     <arg name="limited" value="$(arg limited)"/>
   </include>
 
-  <!-- Given the published joint states, publish tf for the robot links -->
-  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
+  
+  <!-- Given the published joint states, publish tf for the robot links
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" /> -->
 
   <!-- Run the main MoveIt executable without trajectory execution (we do not have controllers configured by default) -->
   <include file="$(find ur10_rmf)/launch/move_group.launch">
@@ -24,6 +25,7 @@
     <arg name="info" value="true"/>
     <arg name="debug" value="$(arg debug)"/>
     <arg name="planner" value="stomp" />
+
   </include>
 
   <!-- Run Rviz and load the default config to see the state of the move_group node -->
@@ -32,20 +34,16 @@
     <arg name="debug" value="$(arg debug)"/>
   </include>
 
-  <!-- If database loading was enabled, start mongodb as well -->
-  <!-- <include file="$(find ur10_moveit_config)/launch/default_warehouse_db.launch" if="$(arg db)"/> -->
 
   <!-- Bring Up-->
   <include file="$(find ur_modern_driver)/launch/ur10_bringup.launch">
     <arg name="robot_ip" value="192.168.88.70"/>
   </include>
-  <!-- roslaunch ur_modern_driver ur10_bringup.launch robot_ip:=192.168.88.70 [reverse_port:=REVERSE_PORT] -->
 
-  <!-- Move It Execution -->
-  <include file="$(find ur10_moveit_config)/launch/ur10_moveit_planning_execution.launch">
-    <arg name="limited" value="true"/>
-  </include>
-  <!-- roslaunch ur10_moveit_config ur10_moveit_planning_execution.launch limited:=true -->
 
+  <!-- NOT WORKING -->
+  <!-- roslaunch ur_modern_driver ur10_moveit_planning_execution.launch limited:=true -->
 
 </launch>
+
+

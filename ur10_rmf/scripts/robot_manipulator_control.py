@@ -30,6 +30,7 @@ from math import pi
 from std_msgs.msg import String
 from std_msgs.msg import Int32
 from std_msgs.msg import Float32MultiArray # temp solution
+from geometry_msgs.msg import Pose2D
 # from dynamixel_gripper.msg  import grip_state
 from rm_msgs.msg import grip_state
 from rm_msgs.msg import ManipulatorState
@@ -40,6 +41,8 @@ class RobotManipulatorControl():
 
     rospy.init_node('robot_manipulator_control_node', anonymous=True)
     rospy.Subscriber("gripper/state", grip_state, self.gripperState_callback)
+    rospy.Subscriber("/ur10/target_pose", grip_state, self.targetPose_callback)
+    self.gripper_pub = rospy.Publisher('gripper/command', Int32, queue_size=10)
     self.gripper_pub = rospy.Publisher('gripper/command', Int32, queue_size=10)
     self.ur10 = ArmManipulation()   ## moveGroup  
     self.gripper_state = -1
@@ -50,6 +53,13 @@ class RobotManipulatorControl():
     self.new_motion_request = False 
     self.motion_request = 'Nan' 
     self.motion_group_progress = 1.0
+    self.target_pose_2d = [0,0,0] #[0.47, 0.09, 0.03]  # target pose detected by 2d pose estimation topic respect to sensor pose
+
+
+
+  #################################################################################################################
+  ##############################################  ROS CallBack Zone   #############################################
+
 
 
   def gripperState_callback(self, data): 
@@ -60,6 +70,61 @@ class RobotManipulatorControl():
   def motionService_callback(self, data): 
     self.motion_request = data.data 
     self.new_motion_request = True 
+
+  # 2d pose estimation callback
+  def targetPose_callback(self, data): 
+    # rospy.loginfo( "I heard gripper state is {}".format(data.gripper_state))
+    self.target_pose_2d = [data.x, data.y, data.theta]
+
+
+  # Timer to pub Manipulator` State in every interval
+  # *Note: when motion is executing, ros callback is being blocked
+  def timer_pub_callback(self, event):
+
+      eef_pose = self.ur10.get_eef_pose()
+      arm_joints = self.ur10.get_arm_joints()
+
+      print ('[CallBack] pub timer called at: ' + str(event.current_real))
+      qua = [ eef_pose.orientation.x, eef_pose.orientation.y, eef_pose.orientation.z, eef_pose.orientation.w]
+      (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(qua)
+      print ("Eef_pose: [%.2f,%.2f,%.2f,%.2f,%.2f,%.2f]" %(eef_pose.position.x, eef_pose.position.y, eef_pose.position.z, roll, pitch, yaw))
+      print ("Arm Joints: {%.3f,%.3f,%.3f,%.3f,%.3f,%.3f}" %(arm_joints[0], arm_joints[1], arm_joints[2], arm_joints[3], arm_joints[4], arm_joints[5]))
+
+      # Send rm_msgs
+      msg = ManipulatorState()
+      msg.gripper_state = self.gripper_state
+      msg.arm_motion_state = self.motion_request
+      msg.arm_motion_progress = self.motion_group_progress   # float, show fraction of completion
+      msg.x = eef_pose.position.x
+      msg.y = eef_pose.position.y
+      msg.z = eef_pose.position.z
+      msg.roll = roll
+      msg.pitch = pitch
+      msg.yaw = yaw
+      self.RMC_pub.publish(msg)
+
+      # TODO: temp solution to pub to ros1_ros2_bridge
+      msg = Float32MultiArray()
+      motion_group_num = self.motion_request[1:] # convert: e.g. 'G23' to 23
+      if (motion_group_num.isdigit()):
+        motion_group_num = float(motion_group_num)
+      else:
+        motion_group_num = -1.0
+      msg.data =  [ self.gripper_state, 
+                    motion_group_num, 
+                    self.motion_group_progress, 
+                    eef_pose.position.x,
+                    eef_pose.position.y,
+                    eef_pose.position.z,
+                    roll,
+                    pitch,
+                    yaw ]
+      self.rm_bridge_pub.publish(msg)
+
+
+
+  #####################################################################################################################
+  ##############################################   Private Class Function   ###########################################
 
 
   # Open gripper, TODO: return success or fail
@@ -145,6 +210,35 @@ class RobotManipulatorControl():
     return (coefficient, filtered_id)
 
 
+  # get 2d pose adjustment according to detected target obj
+  # now is being constraint in 2D space (TODO)
+  def get_pose_adjustment(self, expected_target_pose, target_pose_tolerance):
+      
+      fix_laser_pose = self.yaml_obj['fix_laser_pose']
+      current_target_pose = self.target_pose_2d
+      pose_adjustment = [0,0,0]
+
+      for i in range(3):
+        # TODO: use transformation equation
+        diff =  expected_target_pose[i] - current_target_pose[i] + fix_laser_pose[i]
+        if ( abs(diff) < target_pose_tolerance[i]):
+          pose_adjustment[i] = diff
+        else:
+          if (diff > 0):
+            pose_adjustment[i] = target_pose_tolerance[i]
+          else:
+            pose_adjustment[i] = -target_pose_tolerance[i]
+
+      print( colored(" Dynamic Pose Adjustment [x, y, theta]: {} unit".format(pose_adjustment), 'green'))
+      pose_3d = [pose_adjustment[0], pose_adjustment[1], 0, 0, 0, pose_adjustment[2]] # 2d to 3d xyzrpy
+
+      return pose_3d 
+
+
+  ##################################################################################################################
+  ############################################## Public class function #############################################
+
+
   """ 
   Execute single 'motion' according to 'motion_config.yaml' 
   @Input: String, motion_id 
@@ -174,11 +268,23 @@ class RobotManipulatorControl():
         motion_time_factor = motion_descriptor['timeFactor']
         motion_sequence = motion_descriptor['sequence']
         cartesian_motion_list = self.manage_cartesian_motion_list( motion_sequence, coeff )
-
         cartesian_plan, planned_fraction = self.ur10.plan_cartesian_path(cartesian_motion_list, motion_time_factor)
         print(" -- Planned fraction: {} ".format(planned_fraction))
         if (planned_fraction == 1.0):
           is_success = self.ur10.execute_plan(cartesian_plan)
+
+      ## **Pose Goal Motion, 2D Pose Estimation Result: TODO
+      elif ( motion_type == '2d_dynamic_cartesian'):
+        motion_time_factor = motion_descriptor['timeFactor']
+        # get 2d pose adjustment according to detected target obj
+        if (self.target_pose_2d != [0,0,0]):
+          cartesian_motion = self.get_pose_adjustment( motion_descriptor['target'], motion_descriptor['tolerance'] )
+          cartesian_plan, planned_fraction = self.ur10.plan_cartesian_path( [cartesian_motion], motion_time_factor)
+          print(" -- Dynamic Cartesian Planned fraction: {} ".format(planned_fraction))
+          if (planned_fraction == 1.0):
+            is_success = self.ur10.execute_plan(cartesian_plan)
+        else:
+          print(" -- Skip Cartesian RePositioning ")
 
       ## **Close Gripper Motion
       elif ( motion_type == 'eef_grip_obj'):
@@ -260,13 +366,24 @@ class RobotManipulatorControl():
           # find coeff infront of motionID
           coeff, filtered_motion_id = self.get_coeff_from_id(ch='M', id=motion_id)
           self.execute_motion(filtered_motion_id, coeff)
+        
+        # for printout
+        eef_pose = self.ur10.get_eef_pose()
+        arm_joints = self.ur10.get_arm_joints()
+        qua = [ eef_pose.orientation.x, eef_pose.orientation.y, eef_pose.orientation.z, eef_pose.orientation.w]
+        (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(qua)
+        print ("Eef_pose: [%.2f,%.2f,%.2f,%.2f,%.2f,%.2f]" %(eef_pose.position.x, eef_pose.position.y, eef_pose.position.z, roll, pitch, yaw))
+        print ("Arm Joints: {%.3f,%.3f,%.3f,%.3f,%.3f,%.3f}" %(arm_joints[0], arm_joints[1], arm_joints[2], arm_joints[3], arm_joints[4], arm_joints[5]))
 
-      print(colored(" ===================  Motion Completed!  ===================", 'green'))
+
+
+      print(colored(" =================== All Motion Completed!  ===================", 'green'))
 
     except rospy.ROSInterruptException:
       return
     except KeyboardInterrupt:
-      return
+      print("ctrl-c, exit!!! :'(")
+      exit(0)
 
 
   """
@@ -275,65 +392,27 @@ class RobotManipulatorControl():
    @Pub: '/ur10/manipulator_state', current state of the manipulator
   """
   def execute_motion_group_service(self):
-    rospy.Subscriber("/ur10/motion_group_id", String, self.motionService_callback)
-    self.RMC_pub = rospy.Publisher("/ur10/manipulator_state", ManipulatorState, queue_size=10)
-    self.rm_bridge_pub = rospy.Publisher("/ur10/rm_bridge_state", Float32MultiArray, queue_size=10) # Temp Solution for RMC Pub
-    rospy.Timer(rospy.Duration(1.5), self.timer_pub_callback)
-    print (colored(" ------ Running motion group service ------ ", 'green', attrs=['bold']))
+    
+    try:
+      rospy.Subscriber("/ur10/motion_group_id", String, self.motionService_callback)
+      self.RMC_pub = rospy.Publisher("/ur10/manipulator_state", ManipulatorState, queue_size=10)
+      self.rm_bridge_pub = rospy.Publisher("/ur10/rm_bridge_state", Float32MultiArray, queue_size=10) # Temp Solution for RMC Pub
+      rospy.Timer(rospy.Duration(1.5), self.timer_pub_callback)
+      print (colored(" ------ Running motion group service ------ ", 'green', attrs=['bold']))
 
-    while(1):
-      # check if new request by user
-      if (self.new_motion_request == True):
-        print (" [Service]:: New Motion Group Request!! : {} ".format(self.motion_request) )
-        self.new_motion_request = False
-        self.execute_motion_group( self.motion_request )
+      while(1):
+        # check if new request by user
+        if (self.new_motion_request == True):
+          print (" [Service]:: New Motion Group Request!! : {} ".format(self.motion_request) )
+          self.new_motion_request = False
+          self.execute_motion_group( self.motion_request )
 
-      self.rate.sleep()
+        self.rate.sleep()
 
+    except KeyboardInterrupt:
+      print("ctrl-c, exit!!! :'(")
+      exit(0)
 
-  # Timer to pub Manipulator` State in every interval
-  # *Note: when motion is executing, ros callback is being blocked
-  def timer_pub_callback(self, event):
-
-      eef_pose = self.ur10.get_eef_pose()
-      arm_joints = self.ur10.get_arm_joints()
-
-      print ('[CallBack] pub timer called at: ' + str(event.current_real))
-      qua = [ eef_pose.orientation.x, eef_pose.orientation.y, eef_pose.orientation.z, eef_pose.orientation.w]
-      (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(qua)
-      print ("Eef_pose: [%.2f,%.2f,%.2f,%.2f,%.2f,%.2f]" %(eef_pose.position.x, eef_pose.position.y, eef_pose.position.z, roll, pitch, yaw))
-      print ("Arm Joints: {%.3f,%.3f,%.3f,%.3f,%.3f,%.3f}" %(arm_joints[0], arm_joints[1], arm_joints[2], arm_joints[3], arm_joints[4], arm_joints[5]))
-
-      # Send rm_msgs
-      msg = ManipulatorState()
-      msg.gripper_state = self.gripper_state
-      msg.arm_motion_state = self.motion_request
-      msg.arm_motion_progress = self.motion_group_progress   # float, show fraction of completion
-      msg.x = eef_pose.position.x
-      msg.y = eef_pose.position.y
-      msg.z = eef_pose.position.z
-      msg.roll = roll
-      msg.pitch = pitch
-      msg.yaw = yaw
-      self.RMC_pub.publish(msg)
-
-      # TODO: temp solution to pub to ros1_ros2_bridge
-      msg = Float32MultiArray()
-      motion_group_num = self.motion_request[1:] # convert: e.g. 'G23' to 23
-      if (motion_group_num.isdigit()):
-        motion_group_num = float(motion_group_num)
-      else:
-        motion_group_num = -1.0
-      msg.data =  [ self.gripper_state, 
-                    motion_group_num, 
-                    self.motion_group_progress, 
-                    eef_pose.position.x,
-                    eef_pose.position.y,
-                    eef_pose.position.z,
-                    roll,
-                    pitch,
-                    yaw ]
-      self.rm_bridge_pub.publish(msg)
               
 
 
@@ -350,7 +429,7 @@ if __name__ == '__main__':
   robot_manipulator_control = RobotManipulatorControl()
   robot_manipulator_control.load_motion_config( path="../config/motion_config.yaml" )
 
-  # robot_manipulator_control.execute_all_motion_group()
-  robot_manipulator_control.execute_motion_group_service()
+  robot_manipulator_control.execute_all_motion_group()
+  # robot_manipulator_control.execute_motion_group_service()
   # robot_manipulator_control.execute_motion_group("G5")
   

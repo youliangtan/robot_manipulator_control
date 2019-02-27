@@ -12,19 +12,22 @@
 
 
 arm_id: ur10_001
-tolerance: 0.001
+tolerance: 0.001  # TODO: currently not in used
 enable_gripper: False
+
+# laser position TBC, TODO: should use tf
+fix_laser_pose: [0.1, 0.0, 0.0]  # respect to base_link
+
 
 # Group of Motions for execution in sequence
 motion_group:
   # - { id: G2, sequence: [M9] } # Test Motion Group
-  - { id: G1, sequence: [M3, M4, M2] } # move to rest stop 1 then 2
-  - { id: G2, sequence: [M4, M2] }      # null: directly to rest 2
-  # - { id: G3, sequence: [M5, M1] } # rest 2 to beverage machine
-  # - { id: G4, sequence: [M6, M3] } # beverage machine to rest 1
-  - { id: G9, sequence: [M9, M10, M1]}  # from rest 2 to rest 3  then cup cabinet
-  - { id: G10, sequence: [-M10, M4, M5]}  # cup cabinet to beverage machine
-  - { id: G7, sequence: [M6, M3, M7, M2]}  # Pick to beverage mech
+  # - { id: G1, sequence: [M3, M4, M2] } # move to rest stop 1 then 2
+  # - { id: G2, sequence: [M4, M2] }      # null: directly to rest 2
+  # - { id: G9, sequence: [M9, M10, M1]}  # from rest 2 to rest 3  then cup cabinet
+  - { id: G10, sequence: [-M10, M4, M8, M5]}  # cup cabinet to beverage machine
+  - { id: G7, sequence: [M6, M3, M20, M7, M2]}  # bev mach to payload left
+  # TODO: Right compartment position
   - { id: G6, sequence: [M2, -M7, M3] } # payload to rest 1
 
 
@@ -32,20 +35,24 @@ motion_group:
 motion:
   M1: { type: eef_grip_obj }
   M2: { type: eef_release_obj }
-  M3: { type: joint_goal, data: [0, -1.745, 2.300, -0.513, 1.571, -0.785], timeFactor: 2 }   #Rest1: (lower, payload height)
-  M4: { type: joint_goal, data: [0, -2.107, 1.795, 0.354, 1.571, -0.785], timeFactor: 2 } #Rest 2 (higher)
-  M5: { type: cartesian, sequence: [C1,C2,C3], timeFactor: 2 }
-  M6: { type: cartesian, sequence: [-C3,-C2,-C1], timeFactor: 2 }
+  M3: { type: joint_goal, data: [-0.085,-1.746,2.141,-0.334,1.499,-0.785], timeFactor: 2 }   #Rest1: (lower, payload height)
+  M4: { type: joint_goal, data: [0, -2.107, 1.795, 0.354, 1.571, -0.785], timeFactor: 2 } #Rest 2 (lower)
+  M5: { type: cartesian, sequence: [C2], timeFactor: 2 }
+  M6: { type: cartesian, sequence: [-C2], timeFactor: 2 }
   M7: { type: cartesian, sequence: [C4], timeFactor: 2 }
+  M8: { type: joint_goal, data: [1.107,-1.512,2.064,-0.491,1.275,-0.774], timeFactor: 2 } #Rest 2 (before to beverage machine)
   M9: { type: joint_goal, data: [-1.571, -1.7566, 1.4908, 0.2712, 1.571, -0.7854], timeFactor: 2 }   #Rest3
   M10: { type: cartesian, sequence: [C5], timeFactor: 2 } # y-axis moves in
   M11: { type: cartesian, sequence: [C6], timeFactor: 2 } # Test Motion
+  
+  # Based out of pose estimation topic, absolute [x, y, theta]
+  M20: { type: 2d_dynamic_cartesian, target: [0.52, 0.13, 0.0] , tolerance: [0.08, 0.08, 0.01], timeFactor: 2 } 
 
 
 # Cartesian Motion, in `xyzrpy`
 cartesian_motion:
   C1: [ 0, 0, -0.15, 0, 0, 0]
-  C2: [ -0.2, 0.4, 0, 0, 0, 0.785]  #45degree yaw
+  C2: [ 0, 0.12, 0, 0, 0, 0]  #45degree yaw
   C3: [ 0.12, 0.12, 0, 0, 0, 0]
   C4: [ 0.3, 0, 0, 0, 0, 0]
   C5: [ 0, -0.3, 0, 0, 0, 0]  #insert to drawer

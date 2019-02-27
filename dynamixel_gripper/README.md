@@ -22,7 +22,7 @@ chmod +x GripperOpenClose.py
 ```
 * To start using the ROS API:
 ```
-roslaunch dynamixel_gripper gripper_manager.roslaunch
+roslaunch dynamixel_gripper gripper_manager.launch
 ```
 
 ## ROS API

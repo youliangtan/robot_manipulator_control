@@ -22,14 +22,14 @@ from termcolor import colored
 
 
 
-##
-## ============================== Some Commmon Functions ===============================
-##
+##########################################################################################
+## ============================== Some local Functions ===============================
+###########################################################################################
 
 
 
 # check if current state reaches goal state, check all joints is within tolerance
-def all_close(goal, actual, tolerance=0.001):
+def check_pose(goal, actual, tolerance=0.001):
   """
   Convenience method for testing if a list of values are within a tolerance of their counterparts in another list
   @param: goal, actual    A list of floats, a Pose or a PoseStamped
@@ -39,15 +39,15 @@ def all_close(goal, actual, tolerance=0.001):
   all_equal = True
   if type(goal) is list:
     for index in range(len(goal)):
-      print "Compare tolerance> ", abs(actual[index] - goal[index]), tolerance
+      # print "Compare tolerance> ", abs(actual[index] - goal[index]), tolerance
       if abs(actual[index] - goal[index]) > tolerance: # checking here
         return False
 
   elif type(goal) is geometry_msgs.msg.PoseStamped:
-    return all_close(goal.pose, actual.pose, tolerance)
+    return check_pose(goal.pose, actual.pose, tolerance)
 
   elif type(goal) is geometry_msgs.msg.Pose:
-    return all_close(pose_to_list(goal), pose_to_list(actual), tolerance)
+    return check_pose(pose_to_list(goal), pose_to_list(actual), tolerance)
 
   return True
 
@@ -91,9 +91,9 @@ def controlArmVelocity(plan, numberOfWayPoints = 1, timeFactor=1):
 
 
 
-##
+#########################################################################################
 ## ============================== Arm Manipulator Class ===============================
-##
+#########################################################################################
 
 
 
@@ -182,7 +182,7 @@ class ArmManipulation(object):
 
     current_joints = self.group.get_current_joint_values()
 
-    return all_close(joint_goal, current_joints, tolerance=0.03)
+    return check_pose(joint_goal, current_joints, tolerance=0.03)
 
 
   """ 
@@ -212,7 +212,7 @@ class ArmManipulation(object):
     group.clear_pose_targets()
     current_pose = self.group.get_current_pose().pose
     
-    return all_close(pose_goal, current_pose, 0.01)
+    return check_pose(pose_goal, current_pose, 0.01)
 
 
 

@@ -2,23 +2,19 @@
 
   <!-- By default, we do not start a database (it can be large) -->
   <arg name="db" default="false" />
-
-  <!-- By default, we are not in debug mode -->
   <arg name="debug" default="false" />
-  
   <arg name="limited" default="false"/>
+  <!-- <param name="use_sim_time" value="true"/>   -->
 
   <!-- Load the URDF, SRDF and other .yaml configuration files on the param server -->
   <include file="$(find ur10_rmf)/launch/planning_context.launch">
+    <!-- <param name="use_sim_time" value="true"/>   -->
     <arg name="load_robot_description" value="true"/>
     <arg name="limited" value="$(arg limited)"/>
   </include>
 
   <!-- If needed, broadcast static tf for robot root -->
-  
-
   <!-- NOTE!!!! We do not have a robot connected, so publish fake joint states -->
-
   <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
     <param name="/use_gui" value="false"/> 
     <rosparam param="/source_list">[/move_group/fake_controller_joint_states]</rosparam>
@@ -34,20 +30,17 @@
     <arg name="info" value="true"/>
     <arg name="debug" value="$(arg debug)"/>
     <arg name="planner" value="stomp" />
-
   </include>
 
+
   <!-- Run Rviz and load the default config to see the state of the move_group node -->
-  <include file="$(find ur10_moveit_config)/launch/moveit_rviz.launch">
+  <include file="$(find ur10_rmf)/launch/moveit_rviz.launch">
+    <!-- <param name="use_sim_time" value="true"/>  -->
     <arg name="config" value="true"/>
     <arg name="debug" value="$(arg debug)"/>
   </include>
 
-  <!-- If database loading was enabled, start mongodb as well -->
-  <!-- <include file="$(find ur10_moveit_config)/launch/default_warehouse_db.launch" if="$(arg db)"/> -->
-
-
-
-
+  <!-- include Lidar -->
+  <node pkg="tf" type="static_transform_publisher" name="lidar_to_base" args="0.15 0 0 0 0 0 /base_link /laser 100"/>
 
 </launch>
