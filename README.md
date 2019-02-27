@@ -125,7 +125,7 @@ This class directly interact with the ROS `moveit` package.
 - **execute_plan(self, plan)** return `bool` (success anot)
 
 ### Pub Sub for execute_group_service()
-Use `ur10.execute_motion_group_service()` to start ros service, which request group_id to user.
+Use `ur10.execute_motion_group_service()` to start ros service, which request group_id to user. This will activate ros pub sub mentioned below:
 
 **Sub**: 
 - /ur10/motion_group_id: Group ID (string)
@@ -134,9 +134,12 @@ Use `ur10.execute_motion_group_service()` to start ros service, which request gr
 - /ur10/manipulator_state: State of arm and gripper (custom msg)
 - /ur10/rm_bridge_state: same as above's state, temp solution to feed to ros bridge (float32_array)
 
+### Other Pub Sub Being used by service and non-service function
+- /gripper/state: gripper status (grip_state msg)
+- /gripper/command: command gripper on ros1 (Int32)
+- /ur10/target_pose: 2D Pose from pose estimation (Pose2D) msg
 
-
-## Notes
+## Additional Notes
 - Kinetic will have prob on using `ur_modern_driver`, so need to find fork copy:
 	https://github.com/iron-ox/ur_modern_driver/tree/iron-kinetic-devel
 - Comment `joint_state_publisher` node in `ur10_test.launch` will enable rviz ur10 to run with UR10 hardware 
@@ -152,7 +155,7 @@ Use `ur10.execute_motion_group_service()` to start ros service, which request gr
 - In the yaml file, the hierachy of each is: `motion_group` > `motion` > `cartesian_motion`.
 - Use execute_motion_group_service to check printout of `current 6 joints` and `current eef pose`, this helps in configuring the motion yaml
 
-## Working with Pose Estimation
+### Working with Pose Estimation
 To have dynamic cartesian planning, use `2d_dynamic_cartesian` in yaml file motion type. 
 - Pose input of the target_pose is via ROSTOPIC `/ur10/target_pose` with [x, y, theta] info 
 - RosMsg for pose is from a pose estimation node, e.g: lidar point cloud pose estimation.
