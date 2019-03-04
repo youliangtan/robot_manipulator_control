@@ -26,7 +26,9 @@ import geometry_msgs.msg
 import tf
 from arm_manipulation import ArmManipulation
 
+import numpy as np
 from math import pi
+
 from std_msgs.msg import String
 from std_msgs.msg import Int32
 from std_msgs.msg import Float32MultiArray # temp solution
@@ -40,10 +42,9 @@ class RobotManipulatorControl():
   def __init__(self):
 
     rospy.init_node('robot_manipulator_control_node', anonymous=True)
-    rospy.Subscriber("gripper/state", grip_state, self.gripperState_callback)
-    rospy.Subscriber("/ur10/target_pose", grip_state, self.targetPose_callback)
-    self.gripper_pub = rospy.Publisher('gripper/command', Int32, queue_size=10)
-    self.gripper_pub = rospy.Publisher('gripper/command', Int32, queue_size=10)
+    rospy.Subscriber("/gripper/state", grip_state, self.gripperState_callback)
+    rospy.Subscriber("/ur10/target_pose", Pose2D, self.targetPose_callback)
+    self.gripper_pub = rospy.Publisher('/gripper/command', Int32, queue_size=10)
     self.ur10 = ArmManipulation()   ## moveGroup  
     self.gripper_state = -1
     self.arm_motion_state = ''
@@ -53,7 +54,7 @@ class RobotManipulatorControl():
     self.new_motion_request = False 
     self.motion_request = 'Nan' 
     self.motion_group_progress = 1.0
-    self.target_pose_2d = [0,0,0] #[0.47, 0.09, 0.03]  # target pose detected by 2d pose estimation topic respect to sensor pose
+    self.target_pose_2d =  np.array([0,0,0]) #[0.47, 0.09, 0.03]  # target pose detected by 2d pose estimation topic respect to sensor pose
 
 
 
@@ -73,8 +74,8 @@ class RobotManipulatorControl():
 
   # 2d pose estimation callback
   def targetPose_callback(self, data): 
-    # rospy.loginfo( "I heard gripper state is {}".format(data.gripper_state))
-    self.target_pose_2d = [data.x, data.y, data.theta]
+    # print(" @@@@ Pose callback:" , data)
+    self.target_pose_2d =  np.array([data.x, data.y, data.theta])
 
 
   # Timer to pub Manipulator` State in every interval
@@ -214,13 +215,16 @@ class RobotManipulatorControl():
   # now is being constraint in 2D space (TODO)
   def get_pose_adjustment(self, expected_target_pose, target_pose_tolerance):
       
-      fix_laser_pose = self.yaml_obj['fix_laser_pose']
-      current_target_pose = self.target_pose_2d
+      # TODO: replace expected pos with get_eef_pose, add diff to target 
+      current_target_pose = self.target_pose_2d +  np.array(self.yaml_obj['fix_laser_pose']) # tf respect to baselink
+      # TODO: handle Yaw angle
+      current_target_pose[2] =  current_target_pose[2] - pi
+      print("@@YAW: ", current_target_pose[2])
       pose_adjustment = [0,0,0]
 
       for i in range(3):
         # TODO: use transformation equation
-        diff =  expected_target_pose[i] - current_target_pose[i] + fix_laser_pose[i]
+        diff =  current_target_pose[i] - expected_target_pose[i] 
         if ( abs(diff) < target_pose_tolerance[i]):
           pose_adjustment[i] = diff
         else:
@@ -277,7 +281,7 @@ class RobotManipulatorControl():
       elif ( motion_type == '2d_dynamic_cartesian'):
         motion_time_factor = motion_descriptor['timeFactor']
         # get 2d pose adjustment according to detected target obj
-        if (self.target_pose_2d != [0,0,0]):
+        if ( self.target_pose_2d.tolist() != [0,0,0]):
           cartesian_motion = self.get_pose_adjustment( motion_descriptor['target'], motion_descriptor['tolerance'] )
           cartesian_plan, planned_fraction = self.ur10.plan_cartesian_path( [cartesian_motion], motion_time_factor)
           print(" -- Dynamic Cartesian Planned fraction: {} ".format(planned_fraction))
@@ -355,6 +359,7 @@ class RobotManipulatorControl():
     try:
 
       # Loop thru each 'motion group'
+      
       for obj, i in zip(self.yaml_obj['motion_group'], range(99)):
         motion_sequences = obj['sequence']
         print( colored(" =================== Motion_Group {}: {} =================== ".format(i, motion_sequences), 'blue', attrs=['bold']) )
