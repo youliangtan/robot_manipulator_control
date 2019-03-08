@@ -22,15 +22,15 @@ fix_laser_pose: [-0.05, 0.0, 0.0]  # respect to base_link, # [0.15,0,0], now als
 # Group of Motions for execution in sequence
 motion_group:
   # - { id: G2, sequence: [M9] } # Test Motion Group
-  - { id: G1, sequence: [M3, M4, M2] } # move to rest 1 then 2
-  - { id: G9, sequence: [M9, M10, M1]}  # from rest 2 to rest 3  then cup cabinet
+  - { id: G1, sequence: [M3, M4] } # move to rest 1 then 2
+  - { id: G9, sequence: [M9, M10]}  # from rest 2 to rest 3  then cup cabinet
   - { id: G10, sequence: [-M10, M6, M8, M5]}  # cup cabinet to beverage machine
   # Compartment
-  - { id: G7, sequence: [-M5, M6, M4, M3, M20, M70, M2]}  # bev mach to payload left
-  - { id: G8, sequence: [-M5, M6, M4, M3, M20, M71, M2]}  # bev mach to payload right
+  - { id: G7, sequence: [-M5, M6, M4, M3, M20, M70]}  # bev mach to payload left
+  - { id: G8, sequence: [-M5, M6, M4, M3, M20, M71]}  # bev mach to payload right
   # Back to origin
-  - { id: G6, sequence: [M2, M72, M3, M4] } # payload to bck to rest 2
-  - { id: G2, sequence: [-M5, M4, M2] } # null, directly to rest 2
+  - { id: G6, sequence: [M72, M3, M4] } # payload to bck to rest 2
+  - { id: G2, sequence: [-M5, M4] } # null, directly to rest 2
 
   # dynamic position testing
   # - { id: G98, sequence: [M4, M3]} # tobe removed
@@ -63,7 +63,7 @@ cartesian_motion:
   C1: [ 0, 0, -0.15, 0, 0, 0]
   C2: [ 0, 0.22, 0, 0, 0, 0]  #45degree yaw
   C3: [ 0.12, 0.12, 0, 0, 0, 0]
-  C5: [ 0, 0.26, 0, 0, 0, 0]  #insert to cup rack
+  C5: [ 0, 0.26, -0.025, 0, 0, 0]  #insert to cup rack
   #left
   C8: [ 0, -0.18, 0, 0, 0, 0]
   C9: [ 0.36, 0, 0, 0, 0, 0]

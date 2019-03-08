@@ -280,14 +280,16 @@ class RobotManipulatorControl():
       ## **Pose Goal Motion, 2D Pose Estimation Result: TODO
       elif ( motion_type == '2d_dynamic_cartesian'):
         motion_time_factor = motion_descriptor['timeFactor']
+        # TODO: give error!
         # get 2d pose adjustment according to detected target obj
-        if ( self.target_pose_2d.tolist() != [0,0,0]):
+        if ( self.target_pose_2d.tolist() != [0,0,0]): 
           cartesian_motion = self.get_pose_adjustment( motion_descriptor['target'], motion_descriptor['tolerance'] )
           cartesian_plan, planned_fraction = self.ur10.plan_cartesian_path( [cartesian_motion], motion_time_factor)
           print(" -- Dynamic Cartesian Planned fraction: {} ".format(planned_fraction))
           if (planned_fraction == 1.0):
             is_success = self.ur10.execute_plan(cartesian_plan)
         else:
+          is_success = False
           print(" -- Skip Cartesian RePositioning ")
 
       ## **Close Gripper Motion
@@ -336,7 +338,9 @@ class RobotManipulatorControl():
           for motion_id in motion_sequences:
             # find -1 in motion sequences
             coeff, filtered_motion_id = self.get_coeff_from_id(ch='M', id=motion_id)
-            self.execute_motion(filtered_motion_id, coeff=coeff)
+            is_success = self.execute_motion(filtered_motion_id, coeff=coeff)
+            if is_success == False:
+              return False
             self.motion_group_progress = self.motion_group_progress + fraction
             self.rate.sleep()
           return True
@@ -368,7 +372,6 @@ class RobotManipulatorControl():
     try:
 
       # Loop thru each 'motion group'
-      
       for obj, i in zip(self.yaml_obj['motion_group'], range(99)):
         motion_sequences = obj['sequence']
         print( colored(" =================== Motion_Group {}: {} =================== ".format(i, motion_sequences), 'blue', attrs=['bold']) )
@@ -379,7 +382,7 @@ class RobotManipulatorControl():
         for motion_id in motion_sequences:
           # find coeff infront of motionID
           coeff, filtered_motion_id = self.get_coeff_from_id(ch='M', id=motion_id)
-          self.execute_motion(filtered_motion_id, coeff)
+          is_success = self.execute_motion(filtered_motion_id, coeff)
         
         # for printout
         eef_pose = self.ur10.get_eef_pose()
