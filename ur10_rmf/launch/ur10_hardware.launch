@@ -29,16 +29,27 @@
   </include>
 
   <!-- Run Rviz and load the default config to see the state of the move_group node -->
-  <include file="$(find ur10_moveit_config)/launch/moveit_rviz.launch">
+  <include file="$(find ur10_rmf)/launch/moveit_rviz.launch">
+    <!-- <param name="use_sim_time" value="true"/>  -->
     <arg name="config" value="true"/>
     <arg name="debug" value="$(arg debug)"/>
   </include>
 
+  <!-- include Lidar -->
+  <node pkg="tf" type="static_transform_publisher" name="lidar_to_base" args="0.15 0 0 0 0 0 /base_link /laser 100"/>
 
-  <!-- Bring Up-->
+
+  <!-- Ur10 Bring Up-->
   <include file="$(find ur_modern_driver)/launch/ur10_bringup.launch">
     <arg name="robot_ip" value="192.168.88.70"/>
   </include>
+
+  <!-- urg lidar bring up -->
+  <include file="$(find urg_node)/launch/urg_lidar.launch">
+    <param name="ip_address" value="192.168.88.35"/>
+  </include>
+
+  <node name="object_pose_estimation_ros" pkg="object_pose_estimation" type="object_pose_estimation_ros" output="log"> </node>
 
 
   <!-- NOT WORKING -->
