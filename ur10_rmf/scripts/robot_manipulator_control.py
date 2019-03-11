@@ -445,7 +445,7 @@ if __name__ == '__main__':
   robot_manipulator_control = RobotManipulatorControl()
   robot_manipulator_control.load_motion_config( path="../config/motion_config.yaml" )
 
-  # robot_manipulator_control.execute_all_motion_group()
-  robot_manipulator_control.execute_motion_group_service()
+  robot_manipulator_control.execute_all_motion_group()
+  # robot_manipulator_control.execute_motion_group_service()
   # robot_manipulator_control.execute_motion_group("G5")
   

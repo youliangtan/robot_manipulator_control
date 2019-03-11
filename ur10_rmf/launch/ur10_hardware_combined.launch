@@ -1,12 +1,9 @@
 <launch>
 
-  <!-- By default, we do not start a database (it can be large) -->
-  <arg name="db" default="false" />
-
   <!-- By default, we are not in debug mode -->
   <arg name="debug" default="false" />
-  
   <arg name="limited" default="false"/>
+  
 
   <!-- Load the URDF, SRDF and other .yaml configuration files on the param server -->
   <include file="$(find ur10_rmf)/launch/planning_context.launch">
@@ -20,12 +17,12 @@
 
   <!-- Run the main MoveIt executable without trajectory execution (we do not have controllers configured by default) -->
   <include file="$(find ur10_rmf)/launch/move_group.launch">
-    <arg name="allow_trajectory_execution" value="true"/>  
-    <arg name="fake_execution" value="true"/>
-    <arg name="info" value="true"/>
+    <arg name="limited" value="$(arg limited)"/>
     <arg name="debug" value="$(arg debug)"/>
+    <arg name="allow_trajectory_execution" value="true"/>  
+    <arg name="fake_execution" value="false"/>
+    <arg name="info" value="true"/>
     <arg name="planner" value="stomp" />
-
   </include>
 
   <!-- Run Rviz and load the default config to see the state of the move_group node -->
@@ -44,16 +41,21 @@
     <arg name="robot_ip" value="192.168.88.70"/>
   </include>
 
+
   <!-- urg lidar bring up -->
   <include file="$(find urg_node)/launch/urg_lidar.launch">
     <param name="ip_address" value="192.168.88.35"/>
   </include>
+
 
   <!-- Hokoyu Pose Estimator -->
   <arg name="yaml-path" default="$(find object_pose_estimation)/config/config.yaml"/>
   <node name="agv_pose_detector" pkg="object_pose_estimation" type="object_pose_estimation_ros" output="log" args="$(arg yaml-path)"/>
 
 
+  <!-- Remap follow_joint_trajectory -->
+  <arg name="sim" default="false" />    
+  <remap if="$(arg sim)" from="/follow_joint_trajectory" to="/arm_controller/follow_joint_trajectory"/>
 
 </launch>
 

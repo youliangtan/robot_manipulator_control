@@ -39,11 +39,11 @@ source ~/xxx/devel/setup.bash
 sudo apt-get install ros-kinetic-ur-msgs    # to interface with hardware
 ```
 
-4.2) 'ur_modern_driver' build
+4.2) `ur_modern_driver` build
 ```
-git clone https://github.com/iron-ox/ur_modern_driver
-git checkout iron-kinetic-devel` # if using kenetic
-catkin_make --pkg ur_modern_driver
+git clone https://github.com/ros-industrial/ur_modern_driver/
+git checkout kinetic-devel`             # if using kenetic
+catkin_make --pkg ur_modern_driver      # here apt-get all relevent dependencies of ur_modern_driver
 ```
 
 4.3) Disable mock joint state pub
@@ -76,35 +76,34 @@ rosrun ur10_rmf robot_manipulator_control.py
 
 
 ## Run On UR10 hardware
+Here, Hokoyu Lidar is used for pose estimation of the target object. Refer to `object_pose_estimation` ros pkg for reference.
 
 #### Config on UR10 GUI
 config IP, create IP for UR10 in ubuntu connection, different ip num for the 4th unmasked session, `192.168.88.XXX` (e.g: `192.168.88.222`)
-Then Try to ping the connection 192.168.88.70 (depends on robot’s ip)
+Then try to ping the connection 192.168.88.70 (depends on robot’s ip)
+
+#### 1) Launch MoveGroup, Rviz, Urg_node, Ur10 Hardware BringUp
+```
+roslaunch ur10_rmf ur10_hardware.launch
+```
+Here, you will be able to see the current ur10 hardware pose on Rviz. If dynamic cartesian planning is not used, user can comment out `urg_node`, `object_pose_estimation` pkg. 
 
 
-#### 1) Bring up connection between PC and UR10
-```
-roslaunch ur_modern_driver ur10_bringup.launch robot_ip:=192.168.88.70 [reverse_port:=REVERSE_PORT]
-```
-**IP is robot’s IP
-
-#### 2) Visualize on Rviz
-```
-roslaunch ur10_rmf ur10_test.launch
-```
-
-#### 3) Enable Moveit Execution on hardware
+#### 2) Enable Moveit Execution on hardware
 ```
 roslaunch ur10_moveit_config ur10_moveit_planning_execution.launch limited:=true
 ```
-* Steps 1 and 2, (also urg_node) combined: `roslaunch ur10_rmf ur10_hardware.launch`
+* Steps 1 and 2 combined: `roslaunch ur10_rmf ur10_hardware_combined.launch`
 
-#### 4) Run Script
+
+#### 3) Run Script
 ```
 rosrun ur10_rmf robot_manipulator_control.py
 rostopic pub /ur10/motion_group_id std_msgs/String "INPUT" #INPUT: G1, G2... 
 
 ```
+
+
 
 ## Code Explanation
 
@@ -138,8 +137,6 @@ Use `ur10.execute_motion_group_service()` to start ros service, which request gr
 
 
 ## Additional Notes
-- Kinetic will have prob on using `ur_modern_driver`, so need to find fork copy:
-	https://github.com/iron-ox/ur_modern_driver/tree/iron-kinetic-devel
 - Comment `joint_state_publisher` node in `ur10_test.launch` will enable rviz ur10 to run with UR10 hardware 
 - refer to `dynamixel_gripper` package to run gripper with ur10
 - If wanna run with the gripper, pls refer to the package `readme.md` to run the launch file: `roslaunch dynamixel_gripper gripper_manager.roslaunch`
@@ -147,11 +144,14 @@ Use `ur10.execute_motion_group_service()` to start ros service, which request gr
 - To know current pose and joint angle, check printout after each motion
 
 ### Understand motion_config.yaml
+All defination and setting of motion is configure on `config/motion_config.yaml`. User just need to change the config file to configure each request motion.
+
 - 4 types of motion: `cartesian`, `joint_goal`, `pose_goal`, `2d_dynamic_cartesian`
 - 2 types of gripper motion: `eef_grip_obj`, `eef_release_obj`
 - Edit `enable_gripper` in .yaml file to `True` to enable usage of gripper
 - In the yaml file, the hierachy of each is: `motion_group` > `motion` > `cartesian_motion`.
 - Use execute_motion_group_service to check printout of `current 6 joints` and `current eef pose`, this helps in configuring the motion yaml
+- adding a Coefficeient, e.g. '3', '-2', on each motion_id or cartesian_motion_id is supported in the yaml file.
 
 ### Working with Pose Estimation
 - To have dynamic cartesian planning, use `2d_dynamic_cartesian` in yaml file motion type. 
