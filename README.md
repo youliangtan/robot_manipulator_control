@@ -5,9 +5,15 @@ ROS1 and ROS2 will eventually be used in communication integration. Two ROS 1 pa
 - **UR10 robot manipulator**: uses [ROS MOVEIT!](https://moveit.ros.org) in motion planning. Refer to `ur10_rmf` pkg.
 - **Dynamixel Gripper**: Refer to the `README.md` in the package folder. Refer to 'dynamixel_gripper' pkg.
 
+Used with Dynamic cartesian planning (optional)
+- **Urg_node**: Optional hardware intergration with hokoyu lidar, package is [Here](https://github.com/ros-drivers/urg_node)
+- **Object Pose Estimation**: Optional detection of target object's pose respective to lidar, package is [Here](https://github.com/tanyouliang95/object_pose_estimation)
+
 ![alt text](/resources/ur10_with_gripper.png?)
 
 Here, step-by-step instructions are listed here to guide user on how to setup the environment to: (1) Run it on Rviz  (2) Run it on a real UR10 Robot!!!!! Have fun people!!
+
+---
 
 ## Environment Setup
 1) Install ROS
@@ -46,13 +52,7 @@ git checkout kinetic-devel`             # if using kenetic
 catkin_make --pkg ur_modern_driver      # here apt-get all relevent dependencies of ur_modern_driver
 ```
 
-4.3) Disable mock joint state pub
-```
-roscd ur10_rmf
-nano launch/ur10_test.launch
-```
-- comment `joint_state_publisher` node in `ur10_test.launch` will enable rviz ur10 to run with UR10 hardware
-
+---
 
 ## Run Demo Script
 
@@ -68,11 +68,19 @@ Once done, run the script to visualize the motion control.
 rosrun ur10_rmf robot_manipulator_control.py
 ```
 
+#### 3) Optional Dynamic Planning on target (with hokoyu)
+```
+roslaunch urg_node urg_lidar.launch                         # pls configure hokoyu's ip
+rosrun object_pose_estimation object_pose_estimation_ros
+```
+
 #### Notes
 - uncomment `joint_state_publisher` node in `ur10_test.launch` will enable rviz ur10 to run without UR10 hardware 
 - Change planning between: STOMP, CHOMP, OMPL
 - If select STOMP planner, build package from [industrial moveit](https://github.com/ros-industrial/industrial_moveit)
 
+
+---
 
 
 ## Run On UR10 hardware
@@ -103,7 +111,7 @@ rostopic pub /ur10/motion_group_id std_msgs/String "INPUT" #INPUT: G1, G2...
 
 ```
 
-
+---
 
 ## Code Explanation
 
@@ -135,6 +143,7 @@ Use `ur10.execute_motion_group_service()` to start ros service, which request gr
 - /gripper/command: command gripper on ros1 (Int32) **Pub**
 - /ur10/target_pose: 2D Pose from pose estimation (Pose2D) msg  **Sub**
 
+---
 
 ## Additional Notes
 - Comment `joint_state_publisher` node in `ur10_test.launch` will enable rviz ur10 to run with UR10 hardware 
