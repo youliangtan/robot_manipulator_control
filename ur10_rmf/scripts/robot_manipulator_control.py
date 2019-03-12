@@ -123,6 +123,11 @@ class RobotManipulatorControl():
       self.rm_bridge_pub.publish(msg)
 
 
+  # TODO: external moveit stop to stop all trajectory motion
+  def stop_motion_callback(self):
+    #sub to some topic and when theres's call back, stop motion
+    pass
+
 
   #####################################################################################################################
   ##############################################   Private Class Function   ###########################################

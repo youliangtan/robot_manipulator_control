@@ -5,6 +5,9 @@ Creator: Tan You Liang
 Date: Sept 2018
 Description:  ROS1 MOVE IT Arm control
               Edit `motion_config`.yaml for motion control
+
+MoveIt Class Functions:
+  http://docs.ros.org/jade/api/moveit_ros_planning_interface/html/classmoveit_1_1planning__interface_1_1MoveGroup.html
 ============================================================
 """
 
