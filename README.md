@@ -15,8 +15,7 @@ Here, step-by-step instructions are listed here to guide user on how to setup th
 ---
 
 ## Environment Setup
-#### 1) Install ROS
-   Refer to [here](http://wiki.ros.org/ROS/Installation)
+#### 1) Install [ROS](http://wiki.ros.org/ROS/Installation)
 
 #### 2) Install Moveit and ur10_moveit_config
 According to [here](http://wiki.ros.org/ur10_moveit_config)
@@ -120,7 +119,7 @@ All defination and setting of motion is configure on `config/motion_config.yaml`
 - Use execute_motion_group_service to check printout of `current 6 joints` and `current eef pose`, this helps in configuring the motion yaml
 - adding a Coefficeient, e.g. '3', '-2', on each motion_id or cartesian_motion_id is supported in the yaml file.
 
-### Working with Pose Estimation
+#### Working with Pose Estimation
 - To have dynamic cartesian planning, use `2d_dynamic_cartesian` in yaml file motion type. 
 - Pose input of the target_pose is via ROSTOPIC `/ur10/target_pose` with [x, y, theta] info 
 - RosMsg for pose is from a pose estimation node, e.g: lidar point cloud pose estimation.
@@ -128,7 +127,7 @@ All defination and setting of motion is configure on `config/motion_config.yaml`
 - [Here](https://github.com/tanyouliang95/object_pose_estimation) is my own lidar pose estimation ros node
 
 
-## Working with Gripper
+#### Working with Gripper
 - If wanna run with the gripper, pls refer to the package `readme.md` to run the launch file: `roslaunch dynamixel_gripper gripper_manager.roslaunch`
 - In yaml file, `enable_gripper: False`, and use `eef_grip_obj`, `eef_release_obj`.
 - ur10 control is a higher level control of dynamixel gripper
@@ -139,7 +138,7 @@ All defination and setting of motion is configure on `config/motion_config.yaml`
 
 ## Code Explanation
 
-### ManipulatorControl Class
+#### ManipulatorControl Class
 Class `ManipulatorControl` simplfied the use of typing code to control the robot manipulator. This helps user to create a series of motion just by edit the `motion_config.yaml` file. 3 useful functions in this class are:
 
 - **execute_all_motion_group()**, 
@@ -147,7 +146,7 @@ Class `ManipulatorControl` simplfied the use of typing code to control the robot
 - **execute_motion(string motion_id)**  return True/False, True: success, False: fail
 - **execute_motion_group_service()**  ros service by getting request of motion group
 
-### ArmManipulation Class
+#### ArmManipulation Class
 This class directly interact with the ROS `moveit` package. 
 
 - **go_to_joint_state(joint_goal, time_factor)** return `bool` (success anot)
@@ -155,14 +154,14 @@ This class directly interact with the ROS `moveit` package.
 - **plan_cartesian_path(self, motion_list, time_factor)** return `obj`, `float`  (planned trajectory, success fraction, 1.0)
 - **execute_plan(self, plan)** return `bool` (success anot)
 
-### Pub Sub for execute_group_service()
+#### Pub Sub for execute_group_service()
 Use `ur10.execute_motion_group_service()` to start ros service, which request group_id to user. This will activate ros pub sub mentioned below:
 
 - /ur10/motion_group_id: Group ID (string)  **Sub**
 - /ur10/manipulator_state: State of arm and gripper (custom msg) **Pub**
 - /ur10/rm_bridge_state: same as above's state, temp solution to feed to ros bridge (float32_array) **Pub**
 
-### Other Pub Sub Being used:
+#### Other Pub Sub Being used:
 - /gripper/state: gripper status (grip_state msg) **Sub**
 - /gripper/command: command gripper on ros1 (Int32) **Pub**
 - /ur10/target_pose: 2D Pose from pose estimation (Pose2D) msg  **Sub**
