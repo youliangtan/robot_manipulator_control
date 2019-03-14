@@ -166,8 +166,9 @@ Use `ur10.execute_motion_group_service()` to start ros service, which request gr
 - /gripper/command: command gripper on ros1 (Int32) **Pub**
 - /ur10/target_pose: 2D Pose from pose estimation (Pose2D) msg  **Sub**
 
+---
 
 ## TODO
-- stop execution feature
+- stop execution feature, maybe with asyncExecute()
 - cleanup transformation of dynamic cartesian planning
 - robustness

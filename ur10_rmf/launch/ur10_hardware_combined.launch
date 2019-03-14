@@ -19,10 +19,10 @@
   <include file="$(find ur10_rmf)/launch/move_group.launch">
     <arg name="limited" value="$(arg limited)"/>
     <arg name="debug" value="$(arg debug)"/>
-    <arg name="allow_trajectory_execution" value="true"/>  
-    <arg name="fake_execution" value="false"/>
+    <!-- <arg name="allow_trajectory_execution" value="true"/>   -->
+    <!-- <arg name="fake_execution" value="false"/> -->
     <arg name="info" value="true"/>
-    <arg name="planner" value="stomp" />
+    <!-- <arg name="planner" value="stomp" /> -->
   </include>
 
   <!-- Run Rviz and load the default config to see the state of the move_group node -->
@@ -53,7 +53,7 @@
   <node name="agv_pose_detector" pkg="object_pose_estimation" type="object_pose_estimation_ros" output="log" args="$(arg yaml-path)"/>
 
 
-  <!-- Remap follow_joint_trajectory -->
+  <!-- Remap follow_joint_trajectory if in simulaion-->
   <arg name="sim" default="false" />    
   <remap if="$(arg sim)" from="/follow_joint_trajectory" to="/arm_controller/follow_joint_trajectory"/>
 
