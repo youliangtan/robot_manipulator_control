@@ -20,7 +20,7 @@ Here, step-by-step instructions are listed here to guide user on how to setup th
 #### 2) Install Moveit and ur10_moveit_config
 According to [here](http://wiki.ros.org/ur10_moveit_config)
 ```
-sudo apt-get install ros-indigo-moveit
+sudo apt-get install ros-kinetic-moveit
 sudo apt-get install ros-kinetic-ur10-moveit-config
 ```
 
@@ -31,11 +31,18 @@ roscd ur10_rmf/scripts
 chmod +x robot_manipulator_control.py
 source ~/xxx/devel/setup.bash
 ```
+** Check `dynamixel_gripper` folder Readme if using dynamixel gripper
 
 #### ** 4) If Interfacing with UR10 hardware
-Install 'ur_msgs' and 'ur_modern_driver'
+Install Some UR hardware dependencies 
 ```
 sudo apt-get install ros-kinetic-ur-msgs    # to interface with hardware
+sudo apt-get install ros-kinetic-controller-manager
+sudo apt-get install ros-kinetic-industrial-msgs
+```
+
+Install 'ur_modern_driver'
+```
 git clone https://github.com/ros-industrial/ur_modern_driver/
 git checkout kinetic-devel`             # if using kenetic
 catkin_make --pkg ur_modern_driver      # here apt-get all relevent dependencies of ur_modern_driver
