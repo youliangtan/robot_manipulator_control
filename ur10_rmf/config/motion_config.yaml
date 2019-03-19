@@ -16,7 +16,7 @@ tolerance: 0.001  # TODO: currently not in used
 enable_gripper: False
 
 # laser position TBC, TODO: should use tf 
-fix_laser_pose: [-0.05, 0.0, 0.0]  # respect to base_link, # [0.15,0,0], now also use for recalib from target
+fix_laser_pose: [-0.05, 0.0, 0.0]  # respect to base_link, # [0.15,0,0], TODO: now also use for recalib from target
 
 
 # Group of Motions for execution in sequence

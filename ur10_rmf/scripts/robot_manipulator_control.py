@@ -320,6 +320,8 @@ class RobotManipulatorControl():
     except IndexError, e:
       print(colored("ERROR!!! invalid index in list of .yaml, pls check your input related to motion_config.yaml",'red'))  
 
+    rospy.sleep(0.2) # make sure joint update is latest, maybe?
+
     return is_success
 
 

@@ -32,7 +32,7 @@ from termcolor import colored
 
 
 # check if current state reaches goal state, check all joints is within tolerance
-def check_pose(goal, actual, tolerance=0.001):
+def check_pose(goal, actual, tolerance=0.005):
   """
   Convenience method for testing if a list of values are within a tolerance of their counterparts in another list
   @param: goal, actual    A list of floats, a Pose or a PoseStamped
@@ -120,6 +120,7 @@ class ArmManipulation(object):
     # Misc variables
     self.box_name = "obj_box"
     self.base_name = "base_box"
+    self.side_wall = "side wall"
     self.robot = robot
     self.scene = scene
     self.group = group
@@ -143,12 +144,48 @@ class ArmManipulation(object):
       scene.remove_world_object(self.box_name)
       rospy.sleep(0.5)
 
-    ## Create a box in the planning scene at the location of the left finger:
+    print ("Adding space constraint!")
+    rospy.sleep(1.5) # crude method to ensure scene is loaded
+      
+    ## Create a box in the planning scene at the location of the base, TODO
     box = geometry_msgs.msg.PoseStamped()
     box.header.frame_id = "base_link"
     box.pose.orientation.w = 1.0
     box.pose.position.z = -0.05
-    scene.add_box(self.base_name, box, size=(0.7, 0.7, 0.1))
+    self.scene.add_box(self.base_name, box, size=(0.7, 0.7, 0.1))
+
+    box = geometry_msgs.msg.PoseStamped()
+    box.header.frame_id = "base_link"
+    box.pose.orientation.w = 1.0
+    box.pose.position.y = -0.7
+    # box.pose.position.z = -0.05
+    box.pose.position.z = 0.5
+    self.scene.add_box("side wall", box, size=(0.9, 0.1, 1.4))
+    
+    box = geometry_msgs.msg.PoseStamped()
+    box.header.frame_id = "base_link"
+    box.pose.orientation.w = 1.0
+    box.pose.position.x = -0.7
+    # box.pose.position.z = -0.05
+    box.pose.position.z = 0.5
+    self.scene.add_box("back_wall", box, size=(0.1, 1, 1.4))
+    
+    box = geometry_msgs.msg.PoseStamped()
+    box.header.frame_id = "base_link"
+    box.pose.orientation.w = 1.0
+    box.pose.position.y = 0.7
+    # box.pose.position.z = -0.05
+    box.pose.position.z = 0.02
+    self.scene.add_box("table", box, size=(0.9, 0.4, 0.25))
+    
+    #TODO: add robot position constraint
+    box = geometry_msgs.msg.PoseStamped()
+    box.header.frame_id = "base_link"
+    box.pose.orientation.w = 1.0
+    box.pose.position.x = 1
+    # box.pose.position.z = -0.05
+    box.pose.position.z = 0.05
+    self.scene.add_box("AGV", box, size=(0.8, 0.8, 0.4))
 
     self.scene = scene
     rospy.sleep(1.5)  # crude method to ensure scene is loaded
@@ -157,7 +194,10 @@ class ArmManipulation(object):
   ## ------------------------------------- End init -------------------------------------
 
 
+  ##
+  ################################# add space constraint in scene ##################################
 
+  #TODO: add function to handle constraints
 
   ##
   ################################# goal joint and pose planners #################################
@@ -281,6 +321,7 @@ class ArmManipulation(object):
     state = self.robot.get_current_state()
     self.group.set_start_state(state)
     self.group.execute(plan, wait=True)
+    self.group.stop() # TODO: testing
     return True
 
 
