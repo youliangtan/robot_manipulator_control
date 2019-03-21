@@ -50,6 +50,7 @@
   <node name="agv_pose_detector" pkg="object_pose_estimation" type="object_pose_estimation_ros" output="log" args="$(arg yaml-path)"/>
 
 
+
   <!-- Remap follow_joint_trajectory if in simulaion-->
   <arg name="sim" default="false" />    
   <remap if="$(arg sim)" from="/follow_joint_trajectory" to="/arm_controller/follow_joint_trajectory"/>

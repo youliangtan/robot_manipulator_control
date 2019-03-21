@@ -8,7 +8,7 @@ If Dynamic Dynamic cartesian planning is used (optional):
 - **Urg_node**: Optional hardware intergration with hokoyu lidar, package is [Here](https://github.com/ros-drivers/urg_node)
 - **Object Pose Estimation**: Optional detection of target object's pose respective to lidar, package is [Here](https://github.com/tanyouliang95/object_pose_estimation)
 
-![alt text](/resources/ur10_with_gripper.png?)
+![alt text](/resources/ur10_setup.png?)
 
 Here, step-by-step instructions are listed here to guide user on how to setup the environment to: (1) Run it on Rviz  (2) Run it on a real UR10 Robot!!!!! Have fun people!!
 
