@@ -116,11 +116,8 @@ class ArmManipulation(object):
     ## `DisplayTrajectory`_ publisher which is used to pub trajectories for RViz to visualize:
     display_trajectory_publisher = rospy.Publisher('/move_group/display_planned_path', moveit_msgs.msg.DisplayTrajectory, queue_size=20)
 
-
     # Misc variables
     self.box_name = "obj_box"
-    self.base_name = "base_box"
-    self.side_wall = "side wall"
     self.robot = robot
     self.scene = scene
     self.group = group
@@ -129,6 +126,8 @@ class ArmManipulation(object):
     self.eef_link = group.get_end_effector_link()
     self.group_names = robot.get_group_names()
 
+    # create model to prevent collision
+    ArmManipulation.addModelScene()
 
     ## Printing Basic Information
     print (colored(" --Reference frame: {}".format(self.planning_frame), "yellow"))
@@ -136,29 +135,35 @@ class ArmManipulation(object):
     print (colored(" --Robot Groups: {}".format(self.group_names), "yellow"))
     print (colored(" --Robot current state: {}".format(robot.get_current_state()), "yellow"))
 
-    ## Add Robot Base to scene
-    is_known = self.base_name in scene.get_known_object_names()
-    print ("is base added before: {} \n".format(is_known))
-    if (is_known == True): # Check if base model is added be4
-      scene.remove_world_object(self.base_name)
-      scene.remove_world_object(self.box_name)
-      rospy.sleep(0.5)
 
+    # ## Check if Robot Base is added to scene before
+    # self.base_name = "base_box"
+    # is_known = self.base_name in scene.get_known_object_names()
+    # print ("is base added before: {} \n".format(is_known))
+    # if (is_known == True): # Check if base model is added be4
+    #   scene.remove_world_object(self.base_name)
+    #   scene.remove_world_object(self.box_name)
+    #   rospy.sleep(0.5)
+
+
+
+  # Adding space constraint by adding model in scene
+  # TODO: create general function with arg to handle constraints from yaml
+  def addModelScene(self):
     print ("Adding space constraint!")
     rospy.sleep(1.5) # crude method to ensure scene is loaded
       
-    ## Create a box in the planning scene at the location of the base, TODO
+    # Create a box in the planning scene at the location of the base, TODO
     box = geometry_msgs.msg.PoseStamped()
     box.header.frame_id = "base_link"
     box.pose.orientation.w = 1.0
     box.pose.position.z = -0.05
-    self.scene.add_box(self.base_name, box, size=(0.7, 0.7, 0.1))
+    self.scene.add_box("base_box", box, size=(0.7, 0.7, 0.1))
 
     box = geometry_msgs.msg.PoseStamped()
     box.header.frame_id = "base_link"
     box.pose.orientation.w = 1.0
     box.pose.position.y = -0.7
-    # box.pose.position.z = -0.05
     box.pose.position.z = 0.5
     self.scene.add_box("side wall", box, size=(0.9, 0.1, 1.4))
     
@@ -166,7 +171,6 @@ class ArmManipulation(object):
     box.header.frame_id = "base_link"
     box.pose.orientation.w = 1.0
     box.pose.position.x = -0.7
-    # box.pose.position.z = -0.05
     box.pose.position.z = 0.5
     self.scene.add_box("back_wall", box, size=(0.1, 1, 1.4))
     
@@ -174,18 +178,15 @@ class ArmManipulation(object):
     box.header.frame_id = "base_link"
     box.pose.orientation.w = 1.0
     box.pose.position.y = 0.7
-    # box.pose.position.z = -0.05
     box.pose.position.z = 0.02
     self.scene.add_box("table", box, size=(0.9, 0.4, 0.25))
     
-    #TODO: add robot position constraint
     box = geometry_msgs.msg.PoseStamped()
     box.header.frame_id = "base_link"
     box.pose.orientation.w = 1.0
     box.pose.position.x = 1
-    # box.pose.position.z = -0.05
     box.pose.position.z = 0.05
-    self.scene.add_box("AGV", box, size=(0.8, 0.8, 0.4))
+    self.scene.add_box("AGV base", box, size=(0.8, 0.8, 0.4))
 
     self.scene = scene
     rospy.sleep(1.5)  # crude method to ensure scene is loaded
@@ -193,11 +194,6 @@ class ArmManipulation(object):
 
   ## ------------------------------------- End init -------------------------------------
 
-
-  ##
-  ################################# add space constraint in scene ##################################
-
-  #TODO: add function to handle constraints
 
   ##
   ################################# goal joint and pose planners #################################
