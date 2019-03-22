@@ -17,6 +17,7 @@ import copy
 import rospy
 import yaml
 import signal
+import datetime
 from time import sleep
 from termcolor import colored
 
@@ -56,7 +57,7 @@ class RobotManipulatorControl():
     self.motion_request = 'Nan' 
     self.motion_group_progress = 1.0
     self.target_pose_2d =  np.array([0,0,0]) #[0.47, 0.09, 0.03]  # target pose detected by 2d pose estimation topic respect to sensor pose
-
+    # TODO: Remove 0.02
 
 
   #################################################################################################################
@@ -265,7 +266,7 @@ class RobotManipulatorControl():
       motion_type = motion_descriptor['type']
       is_success = False
       planned_fraction = None
-      print( colored(" -- Motion: {} ".format(motion_descriptor), 'blue') )
+      print( colored(" -- Motion: {}, {} ".format(motion_id, motion_descriptor), 'blue') )
 
       ## **Joint Motion
       if ( motion_type == 'joint_goal'):
@@ -290,19 +291,23 @@ class RobotManipulatorControl():
           is_success = self.ur10.execute_plan(cartesian_plan)
 
       ## **Pose Goal Motion, 2D Pose Estimation Result: TODO
-      elif ( motion_type == '2d_dynamic_cartesian'):
-        motion_time_factor = motion_descriptor['timeFactor']
-        # TODO: give error!
-        # get 2d pose adjustment according to detected target obj
-        if ( self.target_pose_2d.tolist() != [0,0,0]): 
-          cartesian_motion = self.get_pose_adjustment( motion_descriptor['target'], motion_descriptor['tolerance'] )
-          cartesian_plan, planned_fraction = self.ur10.plan_cartesian_path( [cartesian_motion], motion_time_factor)
-          print(" -- Dynamic Cartesian Planned fraction: {} ".format(planned_fraction))
-          if (planned_fraction == 1.0):
-            is_success = self.ur10.execute_plan(cartesian_plan)
-        else:
-          is_success = False
+      elif ( motion_type == '2d_dynamic_cartesian' ):
+        # check if skipping dynamic planning
+        if (self.yaml_obj['skip_dynamic_cartesian'] == True):
+          is_success = True
           print(" -- Skip Cartesian RePositioning ")
+        else:
+          motion_time_factor = motion_descriptor['timeFactor']
+          # get 2d pose adjustment according to detected target obj
+          if ( self.target_pose_2d.tolist() != [0,0,0]): 
+            cartesian_motion = self.get_pose_adjustment( motion_descriptor['target'], motion_descriptor['tolerance'] )
+            cartesian_plan, planned_fraction = self.ur10.plan_cartesian_path( [cartesian_motion], motion_time_factor)
+            print(" -- Dynamic Cartesian Planned fraction: {} ".format(planned_fraction))
+            if (planned_fraction == 1.0):
+              is_success = self.ur10.execute_plan(cartesian_plan)
+          else:
+            is_success = False
+            print(" -- No Target, Skip Cartesian RePositioning, end task! ")
 
       ## **Close Gripper Motion
       elif ( motion_type == 'eef_grip_obj'):
@@ -322,11 +327,11 @@ class RobotManipulatorControl():
 
       print(colored(" -- Motion success outcome: {}".format(is_success), 'green'))
       
-      is_success = False
       # Log error msg if there's failed outcome
       if (is_success == False and self.log_motion_error == True):
         self.log_file = open("error_log.txt", "a")
         self.log_file.write(" Motion Group: {}, gripper state: {} \n".format(self.motion_request, self.gripper_state))
+        self.log_file.write(" -- DateTime: {} \n".format(datetime.datetime.now()))
         self.log_file.write(" -- Failed Motion: {} \n".format(motion_descriptor))
         self.log_file.write(" -- Cartessian plan fraction: {} \n".format( planned_fraction ))
         self.log_file.write(" -- current eef pose: {} \n".format(self.ur10.get_eef_pose()))
@@ -457,11 +462,10 @@ class RobotManipulatorControl():
               
 
 
-
-
-
 ############################################################################################
 ############################################################################################
+
+
 
 def signal_handler(sig, frame):
   print('You pressed Ctrl+C!, end program...')

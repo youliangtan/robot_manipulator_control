@@ -16,7 +16,7 @@ tolerance: 0.001  # TODO: currently not in used
 enable_gripper: False
 log_motion_error: True # named as: `error_log.txt`
 fix_laser_pose: [-0.05, 0.0, 0.0]  # respect to base_link, # [0.15,0,0], TODO: now also use for recalib from target, should use proper tf
-
+skip_dynamic_cartesian: True
 
 # Group of Motions for execution in sequence
 motion_group:
