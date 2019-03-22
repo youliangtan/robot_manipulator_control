@@ -14,9 +14,8 @@
 arm_id: ur10_001
 tolerance: 0.001  # TODO: currently not in used
 enable_gripper: False
-
-# laser position TBC, TODO: should use tf 
-fix_laser_pose: [-0.05, 0.0, 0.0]  # respect to base_link, # [0.15,0,0], TODO: now also use for recalib from target
+log_motion_error: True # named as: `error_log.txt`
+fix_laser_pose: [-0.05, 0.0, 0.0]  # respect to base_link, # [0.15,0,0], TODO: now also use for recalib from target, should use proper tf
 
 
 # Group of Motions for execution in sequence
@@ -37,6 +36,7 @@ motion_group:
   # - { id: G99, sequence: [M20, M70, M2]} # tobe removed
   # - { id: G66, sequence: [M2, M71, M3] } # tobe removed
 
+
 # Specific Motion
 motion:
   M1: { type: eef_grip_obj }
@@ -49,10 +49,9 @@ motion:
   M72: { type: cartesian, sequence: [-C9], timeFactor: 2 }
   M6: { type: joint_goal, data: [1.550,-2.027,2.079,-0.062,1.614,-0.772], timeFactor: 3 }  #Intermediate point from pick to BM
   M8: { type: joint_goal, data: [2.157,-1.289,1.935,-0.694,2.255,-0.775], timeFactor: 2 } #Rest 3 (before entering beverage machine)
-  M9: { type: joint_goal, data: [1.179,-1.639,2.402,-0.754,1.300,-0.787], timeFactor: 2 }   #Rest3, to cup rack
+  M9: { type: joint_goal, data: [1.179,-1.639,2.402,-0.754,1.300,-0.787], timeFactor: 3 } #Rest3, to position cup rack
   M10: { type: cartesian, sequence: [C5], timeFactor: 2 } # y-axis moves in
-
-  
+ 
   # Based out of pose estimation topic, absolute [x, y, theta]
   ## @target: expected position of the eef; @tolerance: allowance for adjustment
   M20: { type: 2d_dynamic_cartesian, target: [0.52, 0.13, 0.0] , tolerance: [0.5, 0.5, 0.1], timeFactor: 2 } 

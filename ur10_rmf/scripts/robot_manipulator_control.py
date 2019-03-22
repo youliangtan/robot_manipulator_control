@@ -16,6 +16,7 @@ import os
 import copy
 import rospy
 import yaml
+import signal
 from time import sleep
 from termcolor import colored
 
@@ -183,7 +184,12 @@ class RobotManipulatorControl():
         exit(0)
 
     self.enable_gripper =  self.yaml_obj['enable_gripper'] # bool
-  
+    self.log_motion_error = self.yaml_obj['log_motion_error']
+
+    #create log file, same dir as config.yaml
+    if (self.log_motion_error == True):
+      self.log_file = open("error_log.txt", "w+")
+
 
   # Manage cartesian motion sequence from .yaml 
   # motion_coeff: higher level coeff from motion group sequence
@@ -258,6 +264,7 @@ class RobotManipulatorControl():
       motion_descriptor = self.yaml_obj['motion'][motion_id]
       motion_type = motion_descriptor['type']
       is_success = False
+      planned_fraction = None
       print( colored(" -- Motion: {} ".format(motion_descriptor), 'blue') )
 
       ## **Joint Motion
@@ -314,13 +321,25 @@ class RobotManipulatorControl():
         exit(0)
 
       print(colored(" -- Motion success outcome: {}".format(is_success), 'green'))
-    
+      
+      is_success = False
+      # Log error msg if there's failed outcome
+      if (is_success == False and self.log_motion_error == True):
+        self.log_file = open("error_log.txt", "a")
+        self.log_file.write(" Motion Group: {}, gripper state: {} \n".format(self.motion_request, self.gripper_state))
+        self.log_file.write(" -- Failed Motion: {} \n".format(motion_descriptor))
+        self.log_file.write(" -- Cartessian plan fraction: {} \n".format( planned_fraction ))
+        self.log_file.write(" -- current eef pose: {} \n".format(self.ur10.get_eef_pose()))
+        self.log_file.write(" -- current arm joints: {} \n\n".format(self.ur10.get_arm_joints()))
+        self.log_file.close() 
+
+
     except KeyError, e:
       print(colored("ERROR!!! invalid key in dict of .yaml, pls check your input related to motion_config.yaml",'red'))  
     except IndexError, e:
       print(colored("ERROR!!! invalid index in list of .yaml, pls check your input related to motion_config.yaml",'red'))  
 
-    rospy.sleep(0.2) # make sure joint update is latest, maybe?
+    rospy.sleep(0.15) # make sure joint update is latest, maybe?
 
     return is_success
 
@@ -399,7 +418,6 @@ class RobotManipulatorControl():
         print ("Eef_pose: [%.2f,%.2f,%.2f,%.2f,%.2f,%.2f]" %(eef_pose.position.x, eef_pose.position.y, eef_pose.position.z, roll, pitch, yaw))
         print ("Arm Joints: {%.3f,%.3f,%.3f,%.3f,%.3f,%.3f}" %(arm_joints[0], arm_joints[1], arm_joints[2], arm_joints[3], arm_joints[4], arm_joints[5]))
 
-
       print(colored(" =================== All Motion Completed!  ===================", 'green'))
 
     except rospy.ROSInterruptException:
@@ -445,10 +463,15 @@ class RobotManipulatorControl():
 ############################################################################################
 ############################################################################################
 
+def signal_handler(sig, frame):
+  print('You pressed Ctrl+C!, end program...')
+  sys.exit(0)
+
 
 
 if __name__ == '__main__':
   print(colored("  -------- Begin Python Moveit Script --------  " , 'white', 'on_green'))
+  signal.signal(signal.SIGINT, signal_handler)
   robot_manipulator_control = RobotManipulatorControl()
   robot_manipulator_control.load_motion_config( path="../config/motion_config.yaml" )
 

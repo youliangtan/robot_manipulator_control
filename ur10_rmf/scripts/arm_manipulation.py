@@ -127,7 +127,8 @@ class ArmManipulation(object):
     self.group_names = robot.get_group_names()
 
     # create model to prevent collision
-    ArmManipulation.addModelScene()
+    self.addModelScene()
+    self.scene = scene
 
     ## Printing Basic Information
     print (colored(" --Reference frame: {}".format(self.planning_frame), "yellow"))
@@ -188,7 +189,6 @@ class ArmManipulation(object):
     box.pose.position.z = 0.05
     self.scene.add_box("AGV base", box, size=(0.8, 0.8, 0.4))
 
-    self.scene = scene
     rospy.sleep(1.5)  # crude method to ensure scene is loaded
 
 

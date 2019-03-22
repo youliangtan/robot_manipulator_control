@@ -83,6 +83,7 @@ rosrun object_pose_estimation object_pose_estimation_ros
 - uncomment `joint_state_publisher` node in `ur10_test.launch` will enable rviz ur10 to run without UR10 hardware 
 - Change planning between: STOMP, CHOMP, OMPL
 - If select STOMP planner, build package from [industrial moveit](https://github.com/ros-industrial/industrial_moveit)
+- For 'ur_modern_driver' bringup, Arg `servoj_time` happened to be related to the network between arm and pc, increase to prevent congestion, or maybe some jerking motion
 
 
 ---
@@ -139,7 +140,9 @@ All defination and setting of motion is configure on `config/motion_config.yaml`
 - In yaml file, `enable_gripper: False`, and use `eef_grip_obj`, `eef_release_obj`.
 - ur10 control is a higher level control of dynamixel gripper
 
-
+#### Error Msg
+- enable `log_motion_error` with True, this will record all unsuccessfull motion, which can be in planning or execution phase
+- the file `error_log.txt` will be generated in the current working directory
 
 ---
 

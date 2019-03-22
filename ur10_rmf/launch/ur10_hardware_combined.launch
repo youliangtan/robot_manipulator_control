@@ -36,6 +36,7 @@
   <!-- Ur10 Bring Up-->
   <include file="$(find ur_modern_driver)/launch/ur10_bringup.launch">
     <arg name="robot_ip" value="192.168.88.70"/>
+    <arg name="servoj_time" value="0.012"/>  <!-- Test -->
   </include>
 
 
