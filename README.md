@@ -1,39 +1,45 @@
 # Robot_Manipulator_Control
-This is a developing ROS robot manipulator project, involved in using a UR10, 'self-made' dynamixel gripper. The main idea of this package is to enable fast configure on the UR10 motion sequence within in a short period of time. This is done by just edit the `motion_config.yaml` file, without changing the source code. In this arm_manipulator package, 2 ROS packages are used here:
-
-- **UR10 robot manipulator**: uses [ROS MOVEIT!](https://moveit.ros.org) in motion planning. Refer to `ur10_rmf` pkg.
-- **Dynamixel Gripper**: Refer to the `README.md` in the package folder. Refer to 'dynamixel_gripper' pkg.
-
-If Dynamic Dynamic cartesian planning is used (optional):
-- **Urg_node**: Optional hardware intergration with hokoyu lidar, package is [Here](https://github.com/ros-drivers/urg_node)
-- **Object Pose Estimation**: Optional detection of target object's pose respective to lidar, package is [Here](https://github.com/tanyouliang95/object_pose_estimation)
+This is a developing ROS robot manipulator project, involved in using a UR10, 'self-made' dynamixel gripper. The main idea of this package is to enable fast configure on the UR10 motion sequence within in a short period of time. This is done by just edit the `motion_config.yaml` file, without changing the source code. 
 
 ![alt text](/resources/ur10_setup.png?)
 
 Here, step-by-step instructions are listed here to guide user on how to setup the environment to: (1) Run it on Rviz  (2) Run it on a real UR10 Robot!!!!! Have fun people!!
 
+
+## Table Of Contents <a name="top"></a>
+
+1. [Environment Setup](#1)  
+2. [Run Demo Script on Rviz](#2)    
+3. [Run On UR10 hardware](#3)    
+4. [Understand motion_config.yaml](#4)    
+5. [Brief Code Explanation](#5)    
+6. [TODO](#6)    
+
+
 ---
 
-## Environment Setup
-#### 1) Install [ROS](http://wiki.ros.org/ROS/Installation)
+## 1. Environment Setup <a name="1"></a>
+#### a) Install [ROS](http://wiki.ros.org/ROS/Installation)
 
-#### 2) Install Moveit and ur10_moveit_config
-According to [here](http://wiki.ros.org/ur10_moveit_config)
+#### b) Install Moveit and ur10_moveit_config
+
+[ROS MOVEIT!](https://moveit.ros.org) is used for motion planning. UR10 moveit pkg is [here](http://wiki.ros.org/ur10_moveit_config).
 ```
 sudo apt-get install ros-kinetic-moveit
 sudo apt-get install ros-kinetic-ur10-moveit-config
 ```
 
-#### 3) Install current ROS Package
+#### c) Install current ROS Package
 ```
 catkin_make
 roscd ur10_rmf/scripts
 chmod +x robot_manipulator_control.py
 source ~/xxx/devel/setup.bash
 ```
-** Check `dynamixel_gripper` folder Readme if using dynamixel gripper
+* If  **Dynamixel Gripper** is used: Refer to the `README.md` in to `dynamixel_gripper` pkg.
 
-#### ** 4) If Interfacing with UR10 hardware
+
+#### ** d) If Interfacing with UR10 hardware
 Install Some UR hardware dependencies 
 ```
 sudo apt-get install ros-kinetic-ur-msgs    # to interface with hardware
@@ -48,17 +54,24 @@ git checkout kinetic-devel`             # if using kenetic
 catkin_make --pkg ur_modern_driver      # here apt-get all relevent dependencies of ur_modern_driver
 ```
 
-#### ** 5) Configure IP for UR10 hardware and PC Network Connection
+#### ** e) Configure IP for UR10 hardware and PC Network Connection
 ```
 # FIRST CREATE A LOCAL IP TO COMMUNICATE WITH THE HARDWARE DEPENDING ON IP AND MASK
 ping 192.168.88.70 #depends on $UR10_IP
 ```
 
+#### ** g) If Dynamic Dynamic cartesian planning is used (optional):
+- **Urg_node**: Optional hardware intergration with hokoyu lidar, package is [Here](https://github.com/ros-drivers/urg_node)
+- **Object Pose Estimation**: Optional detection of target object's pose respective to lidar, package is [Here](https://github.com/tanyouliang95/object_pose_estimation)
+
+
 ---
 
-## Run Demo Script
+## 2. Run Demo Script on Rviz <a name="2"></a>
 
-#### 1) Run Movegroup and Rviz
+This is to run UR on Rviz, without a hardware setup.
+
+#### a) Run Movegroup and Rviz
 Robot’s config file
 ```
 roslaunch ur10_rmf ur10_test.launchor 
@@ -66,14 +79,14 @@ roslaunch ur10_rmf ur10_test.launchor
 roslaunch ur10_moveit_config demo.launch
 ```
 
-#### 2) Motion Planning Python Script
+#### b) Motion Planning Python Script
 To program a series of motion , edit the yaml file at `config/motion_config.yaml`. Once done, run the script to visualize the motion control.
 
 ```
 rosrun ur10_rmf robot_manipulator_control.py
 ```
 
-#### 3) Optional Dynamic Planning on target (with hokoyu)
+#### c) Optional Dynamic Planning on target (with hokoyu)
 ```
 roslaunch urg_node urg_lidar.launch                         # pls configure hokoyu's ip
 rosrun object_pose_estimation object_pose_estimation_ros
@@ -89,24 +102,24 @@ rosrun object_pose_estimation object_pose_estimation_ros
 ---
 
 
-## Run On UR10 hardware
+## 3. Run On UR10 hardware <a name="3"></a>
 Here, Hokoyu Lidar is used for pose estimation of the target object. Refer to `object_pose_estimation` ros pkg for reference.
 
-#### 1) Launch MoveGroup, Rviz, Urg_node, Ur10 Hardware BringUp
+#### a) Launch MoveGroup, Rviz, Urg_node, Ur10 Hardware BringUp
 ```
 roslaunch ur10_rmf ur10_hardware.launch
 ```
 Here, you will be able to see the current ur10 hardware pose on Rviz. If dynamic cartesian planning is not used, user can comment out `urg_node`, `object_pose_estimation` pkg. 
 
 
-#### 2) Enable Moveit Execution on hardware
+#### b) Enable Moveit Execution on hardware
 ```
 roslaunch ur10_moveit_config ur10_moveit_planning_execution.launch limited:=true
 ```
 * Steps 1 and 2 combined: `roslaunch ur10_rmf ur10_hardware_combined.launch`
 
 
-#### 3) Run and Test Script
+#### c) Run and Test Script
 ```
 rosrun ur10_rmf robot_manipulator_control.py
 rostopic pub /ur10/motion_group_id std_msgs/String "INPUT" #INPUT: G1, G2... 
@@ -117,7 +130,7 @@ rostopic pub /ur10/motion_group_id std_msgs/String "INPUT" #INPUT: G1, G2...
 ---
 
 
-## Understand motion_config.yaml
+## 4. Understand motion_config.yaml <a name="4"></a>
 All defination and setting of motion is configure on `config/motion_config.yaml`. User just need to change the config file to configure each request motion.
 
 - 4 types of motion: `cartesian`, `joint_goal`, `pose_goal`, `2d_dynamic_cartesian`
@@ -146,7 +159,7 @@ All defination and setting of motion is configure on `config/motion_config.yaml`
 
 ---
 
-## Code Explanation
+## 5. Brief Code Explanation <a name="5"></a>
 
 #### ManipulatorControl Class
 Class `ManipulatorControl` simplfied the use of typing code to control the robot manipulator. This helps user to create a series of motion just by edit the `motion_config.yaml` file. 3 useful functions in this class are:
@@ -178,7 +191,7 @@ Use `ur10.execute_motion_group_service()` to start ros service, which request gr
 
 ---
 
-## TODO
+## 6. TODO <a name="6"></a>
 - update scene obstacle creation
 - stop execution feature, maybe with asyncExecute()
 - cleanup transformation of dynamic cartesian planning
