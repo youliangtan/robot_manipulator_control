@@ -16,11 +16,10 @@ tolerance: 0.001  # TODO: currently not in used
 enable_gripper: False
 log_motion_error: True # named as: `error_log.txt`
 fix_laser_pose: [-0.05, 0.0, 0.0]  # respect to base_link, # [0.15,0,0], TODO: now also use for recalib from target, should use proper tf
-skip_dynamic_cartesian: True
+skip_dynamic_cartesian: False
 
 # Group of Motions for execution in sequence
 motion_group:
-  # - { id: G2, sequence: [M9] } # Test Motion Group
   - { id: G1, sequence: [M3, M4] } # move to rest 1 then 2
   - { id: G9, sequence: [M9, M10]}  # from rest 2 to rest 3  then cup cabinet
   - { id: G10, sequence: [-M10, M6, M8, M5]}  # cup cabinet to beverage machine
@@ -41,7 +40,7 @@ motion_group:
 motion:
   M1: { type: eef_grip_obj }
   M2: { type: eef_release_obj }
-  M3: { type: joint_goal, data: [-0.093,-1.698,2.186,-0.428,1.490,-0.786], timeFactor: 2 }   #Rest1: (lower, payload height)
+  M3: { type: joint_goal, data: [-0.098,-1.761,2.141,-0.321,1.487,-0.786], timeFactor: 2 }   #Rest1: (lower, payload height)
   M4: { type: joint_goal, data: [0, -2.107, 1.795, 0.354, 1.571, -0.785], timeFactor: 2 } #Rest 2 (higher)
   M5: { type: cartesian, sequence: [C2], timeFactor: 2 }
   M70: { type: cartesian, sequence: [C8, C9], timeFactor: 2 }  # left payload
@@ -65,7 +64,7 @@ cartesian_motion:
   C5: [ 0, 0.26, -0.025, 0, 0, 0]  #insert to cup rack
   #left
   C8: [ 0, -0.18, 0, 0, 0, 0]
-  C9: [ 0.36, 0, 0, 0, 0, 0]
+  C9: [ 0.36, 0, -0.045, 0, 0, 0]
   #right
   C7: [ 0, 0.20, 0, 0, 0, 0]
-  C10: [0.36,0,0,0,0,-0.45] # yaw turn for delivery compartment
+  C10: [0.36,0,-0.045,0,0,-0.45] # yaw turn for delivery compartment

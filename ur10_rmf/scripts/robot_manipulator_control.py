@@ -370,7 +370,8 @@ class RobotManipulatorControl():
             # find -1 in motion sequences
             coeff, filtered_motion_id = self.get_coeff_from_id(ch='M', id=motion_id)
             is_success = self.execute_motion(filtered_motion_id, coeff=coeff)
-            if is_success == False:
+            if (is_success == False):
+              print(colored("Returned Is_success: False after execute a motion", 'red'))
               return False
             self.motion_group_progress = self.motion_group_progress + fraction
             self.rate.sleep()

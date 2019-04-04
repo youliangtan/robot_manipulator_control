@@ -183,3 +183,4 @@ Use `ur10.execute_motion_group_service()` to start ros service, which request gr
 - stop execution feature, maybe with asyncExecute()
 - cleanup transformation of dynamic cartesian planning
 - robustness
+- Adjust dynamic planning tolerance, chg to when hit limit, stop execution
