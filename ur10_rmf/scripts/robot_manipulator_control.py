@@ -56,6 +56,7 @@ class RobotManipulatorControl():
     self.new_motion_request = False 
     self.motion_request = 'Nan' 
     self.motion_group_progress = 1.0
+    self.is_success = True
     self.target_pose_2d =  np.array([0,0,0]) #[0.47, 0.09, 0.03]  # target pose detected by 2d pose estimation topic respect to sensor pose
     # TODO: Remove 0.02
 
@@ -93,7 +94,7 @@ class RobotManipulatorControl():
       print ("Eef_pose: [%.2f,%.2f,%.2f,%.2f,%.2f,%.2f]" %(eef_pose.position.x, eef_pose.position.y, eef_pose.position.z, roll, pitch, yaw))
       print ("Arm Joints: {%.3f,%.3f,%.3f,%.3f,%.3f,%.3f}" %(arm_joints[0], arm_joints[1], arm_joints[2], arm_joints[3], arm_joints[4], arm_joints[5]))
 
-      # Send rm_msgs
+      # Send rm_msgs, TODO
       msg = ManipulatorState()
       msg.gripper_state = self.gripper_state
       msg.arm_motion_state = self.motion_request
@@ -107,6 +108,11 @@ class RobotManipulatorControl():
       self.RMC_pub.publish(msg)
 
       # TODO: temp solution to pub to ros1_ros2_bridge
+      if (self.is_success == True):
+        error_flag = 0.0
+      else:
+        error_flag = 1.0
+
       msg = Float32MultiArray()
       motion_group_num = self.motion_request[1:] # convert: e.g. 'G23' to 23
       if (motion_group_num.isdigit()):
@@ -116,6 +122,7 @@ class RobotManipulatorControl():
       msg.data =  [ self.gripper_state, 
                     motion_group_num, 
                     self.motion_group_progress, 
+                    error_flag,  # new
                     eef_pose.position.x,
                     eef_pose.position.y,
                     eef_pose.position.z,
@@ -414,7 +421,7 @@ class RobotManipulatorControl():
         for motion_id in motion_sequences:
           # find coeff infront of motionID
           coeff, filtered_motion_id = self.get_coeff_from_id(ch='M', id=motion_id)
-          is_success = self.execute_motion(filtered_motion_id, coeff)
+          self.is_success = self.execute_motion(filtered_motion_id, coeff)
         
         # for printout
         eef_pose = self.ur10.get_eef_pose()
@@ -452,7 +459,7 @@ class RobotManipulatorControl():
         if (self.new_motion_request == True):
           print (" [Service]:: New Motion Group Request!! : {} ".format(self.motion_request) )
           self.new_motion_request = False
-          self.execute_motion_group( self.motion_request )
+          self.is_success = self.execute_motion_group( self.motion_request )
 
         self.rate.sleep()
 

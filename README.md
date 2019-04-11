@@ -47,7 +47,7 @@ sudo apt-get install ros-kinetic-controller-manager
 sudo apt-get install ros-kinetic-industrial-msgs
 ```
 
-Install 'ur_modern_driver'
+Install `ur_modern_driver`
 ```
 git clone https://github.com/ros-industrial/ur_modern_driver/
 git checkout kinetic-devel`             # if using kenetic
@@ -74,7 +74,7 @@ This is to run UR on Rviz, without a hardware setup.
 #### a) Run Movegroup and Rviz
 Robot’s config file
 ```
-roslaunch ur10_rmf ur10_test.launchor 
+roslaunch ur10_rmf ur10_test.launch
 # or default .launch file
 roslaunch ur10_moveit_config demo.launch
 ```
@@ -197,3 +197,4 @@ Use `ur10.execute_motion_group_service()` to start ros service, which request gr
 - cleanup transformation of dynamic cartesian planning
 - robustness
 - Adjust dynamic planning tolerance, chg to when hit limit, stop execution
+- Handle pub of `error_flag`
