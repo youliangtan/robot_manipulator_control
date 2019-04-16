@@ -33,6 +33,7 @@ from math import pi
 
 from std_msgs.msg import String
 from std_msgs.msg import Int32
+from std_msgs.msg import Bool
 from std_msgs.msg import Float32MultiArray # temp solution
 from geometry_msgs.msg import Pose2D
 # from dynamixel_gripper.msg  import grip_state
@@ -50,7 +51,7 @@ class RobotManipulatorControl():
     rospy.init_node('robot_manipulator_control_node', anonymous=True)
     rospy.Subscriber("/gripper/state", grip_state, self.gripperState_callback)
     rospy.Subscriber("/ur10/target_pose", Pose2D, self.targetPose_callback)
-    rospy.Subscriber("/ur10/reset", grip_state, self.reset_callback)
+    rospy.Subscriber("/ur10/reset", Bool, self.reset_callback)
     self.gripper_pub = rospy.Publisher('/gripper/command', Int32, queue_size=10)
     self.ur10 = ArmManipulation()   ## moveGroup  
     self.init_state_config()
@@ -99,9 +100,8 @@ class RobotManipulatorControl():
   def reset_callback(self, data):
     if ( data.data == True):
       print( colored(" \n =================== \t RESET IS TRIGGERED \t =================== \n", "white", "on_magenta"))
-      self.reset()
-      self.load_motion_config(path=MOTION_CONFIG_PATH)
       self.init_state_config()
+      self.load_motion_config(path=MOTION_CONFIG_PATH)
     else:
         print(" -- Reset is 'False': Nothing Happened --")
 
@@ -480,7 +480,7 @@ class RobotManipulatorControl():
       while(1):
         # check if new request by user
         if (self.new_motion_request == True):
-          print (" [Service]:: New Motion Group Request!! : {} ".format(self.motion_request) )
+          print ( colored(" [Service]:: New Motion Group Request!! : {} ".format(self.motion_request), 'white', 'on_green') )
           self.new_motion_request = False
           self.is_success = self.execute_motion_group( self.motion_request )
 
