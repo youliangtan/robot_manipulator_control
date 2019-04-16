@@ -40,30 +40,70 @@ from rm_msgs.msg import grip_state
 from rm_msgs.msg import ManipulatorState
 
 
+MOTION_CONFIG_PATH = "../config/motion_config.yaml"
+ROS_TIME_RATE = 6 #hz
+
+
 class RobotManipulatorControl():
   def __init__(self):
 
     rospy.init_node('robot_manipulator_control_node', anonymous=True)
     rospy.Subscriber("/gripper/state", grip_state, self.gripperState_callback)
     rospy.Subscriber("/ur10/target_pose", Pose2D, self.targetPose_callback)
+    rospy.Subscriber("/ur10/reset", grip_state, self.reset_callback)
     self.gripper_pub = rospy.Publisher('/gripper/command', Int32, queue_size=10)
     self.ur10 = ArmManipulation()   ## moveGroup  
+    self.init_state_config()
+
+
+  # Read Yaml file
+  def load_motion_config(self, path):
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    full_path = dir_path + "/" + path
+    with open(full_path, 'r') as stream:
+      try:
+        self.yaml_obj = yaml.load(stream)
+      except yaml.YAMLError as exc:
+        print("Error in loading Yaml" + exc)
+        exit(0)
+
+    self.enable_gripper =  self.yaml_obj['enable_gripper'] # bool
+    self.log_motion_error = self.yaml_obj['log_motion_error']
+
+    #create log file, same dir as config.yaml
+    if (self.log_motion_error == True):
+      self.log_file = open("error_log.txt", "w+")
+
+
+  # for initialization
+  def init_state_config(self):
     self.gripper_state = -1
     self.arm_motion_state = ''
-    self.rate = rospy.Rate(6) # 6hz
+    self.rate = rospy.Rate( ROS_TIME_RATE ) # 6hz
     self.enable_gripper = False
     self.yaml_obj = []
     self.new_motion_request = False 
     self.motion_request = 'Nan' 
     self.motion_group_progress = 1.0
     self.is_success = True
-    self.target_pose_2d =  np.array([0,0,0]) #[0.47, 0.09, 0.03]  # target pose detected by 2d pose estimation topic respect to sensor pose
-    # TODO: Remove 0.02
+    self.target_pose_2d =  np.array([0,0,0])   # target pose detected by 2d pose estimation topic respect to sensor pose
 
 
-  #################################################################################################################
+
+  # ***************************************************************************************************************
   ##############################################  ROS CallBack Zone   #############################################
+  #################################################################################################################
 
+
+  # Reset Handler
+  def reset_callback(self, data):
+    if ( data.data == True):
+      print( colored(" \n =================== \t RESET IS TRIGGERED \t =================== \n", "white", "on_magenta"))
+      self.reset()
+      self.load_motion_config(path=MOTION_CONFIG_PATH)
+      self.init_state_config()
+    else:
+        print(" -- Reset is 'False': Nothing Happened --")
 
 
   def gripperState_callback(self, data): 
@@ -138,8 +178,10 @@ class RobotManipulatorControl():
     pass
 
 
-  #####################################################################################################################
+
+  # *******************************************************************************************************************
   ##############################################   Private Class Function   ###########################################
+  #####################################################################################################################
 
 
   # Open gripper, TODO: return success or fail
@@ -178,25 +220,6 @@ class RobotManipulatorControl():
         self.rate.sleep()
 
     return True
-
-
-  # Read Yaml file
-  def load_motion_config(self,path):
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    full_path = dir_path + "/" + path
-    with open(full_path, 'r') as stream:
-      try:
-        self.yaml_obj = yaml.load(stream)
-      except yaml.YAMLError as exc:
-        print("Error in loading Yaml" + exc)
-        exit(0)
-
-    self.enable_gripper =  self.yaml_obj['enable_gripper'] # bool
-    self.log_motion_error = self.yaml_obj['log_motion_error']
-
-    #create log file, same dir as config.yaml
-    if (self.log_motion_error == True):
-      self.log_file = open("error_log.txt", "w+")
 
 
   # Manage cartesian motion sequence from .yaml 
@@ -469,9 +492,9 @@ class RobotManipulatorControl():
 
               
 
-
-############################################################################################
-############################################################################################
+# ***************************************************************************************************************
+#################################################################################################################
+#################################################################################################################
 
 
 
@@ -485,7 +508,7 @@ if __name__ == '__main__':
   print(colored("  -------- Begin Python Moveit Script --------  " , 'white', 'on_green'))
   signal.signal(signal.SIGINT, signal_handler)
   robot_manipulator_control = RobotManipulatorControl()
-  robot_manipulator_control.load_motion_config( path="../config/motion_config.yaml" )
+  robot_manipulator_control.load_motion_config( path=MOTION_CONFIG_PATH )
 
   # robot_manipulator_control.execute_all_motion_group()
   robot_manipulator_control.execute_motion_group_service()
