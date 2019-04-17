@@ -126,13 +126,18 @@ class RobotManipulatorControl():
   def timer_pub_callback(self, event):
 
       eef_pose = self.ur10.get_eef_pose()
-      arm_joints = self.ur10.get_arm_joints()
 
       print ('[CallBack] pub timer called at: ' + str(event.current_real))
       qua = [ eef_pose.orientation.x, eef_pose.orientation.y, eef_pose.orientation.z, eef_pose.orientation.w]
       (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(qua)
       print ("Eef_pose: [%.2f,%.2f,%.2f,%.2f,%.2f,%.2f]" %(eef_pose.position.x, eef_pose.position.y, eef_pose.position.z, roll, pitch, yaw))
-      print ("Arm Joints: {%.3f,%.3f,%.3f,%.3f,%.3f,%.3f}" %(arm_joints[0], arm_joints[1], arm_joints[2], arm_joints[3], arm_joints[4], arm_joints[5]))
+
+      arm_joints = self.ur10.get_arm_joints()
+      if (len(arm_joints) == 6): # check if joints val is valid
+        print ("Arm Joints: {%.3f,%.3f,%.3f,%.3f,%.3f,%.3f}" %(arm_joints[0], arm_joints[1], arm_joints[2], arm_joints[3], arm_joints[4], arm_joints[5]))
+      else:
+        print (colored(" Error! Arm Joints is invalid, maybe arm is disconnected, raise error flag!!! ", "red"))
+        self.is_success = False # TODO: for now to raise error flag
 
       # Send rm_msgs, TODO
       msg = ManipulatorState()
@@ -369,9 +374,9 @@ class RobotManipulatorControl():
         self.log_file.close() 
 
 
-    except KeyError, e:
+    except KeyError as e:
       print(colored("ERROR!!! invalid key in dict of .yaml, pls check your input related to motion_config.yaml",'red'))  
-    except IndexError, e:
+    except IndexError as e:
       print(colored("ERROR!!! invalid index in list of .yaml, pls check your input related to motion_config.yaml",'red'))  
 
     rospy.sleep(0.15) # make sure joint update is latest, maybe?
@@ -407,9 +412,9 @@ class RobotManipulatorControl():
             self.rate.sleep()
           return True
       
-    except KeyError, e:
+    except KeyError as e:
       print(colored("ERROR!!! invalid key in dict of .yaml, pls check your input related to motion_config.yaml",'red'))  
-    except IndexError, e:
+    except IndexError as e:
       print(colored("ERROR!!! invalid index in list of .yaml, pls check your input related to motion_config.yaml",'red'))  
     
     return False
@@ -422,16 +427,14 @@ class RobotManipulatorControl():
   """
   def execute_all_motion_group(self):
     
-    # Solely for printout
-    eef_pose = self.ur10.get_eef_pose()
-    arm_joints = self.ur10.get_arm_joints()
-    qua = [ eef_pose.orientation.x, eef_pose.orientation.y, eef_pose.orientation.z, eef_pose.orientation.w]
-    (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(qua)
-    print ("Eef_pose: [%.2f,%.2f,%.2f,%.2f,%.2f,%.2f]" %(eef_pose.position.x, eef_pose.position.y, eef_pose.position.z, roll, pitch, yaw))
-    print ("Arm Joints: {%.3f,%.3f,%.3f,%.3f,%.3f,%.3f}" %(arm_joints[0], arm_joints[1], arm_joints[2], arm_joints[3], arm_joints[4], arm_joints[5]))
-
-
     try:
+      # Solely for printout
+      eef_pose = self.ur10.get_eef_pose()
+      arm_joints = self.ur10.get_arm_joints()
+      qua = [ eef_pose.orientation.x, eef_pose.orientation.y, eef_pose.orientation.z, eef_pose.orientation.w]
+      (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(qua)
+      print ("Eef_pose: [%.2f,%.2f,%.2f,%.2f,%.2f,%.2f]" %(eef_pose.position.x, eef_pose.position.y, eef_pose.position.z, roll, pitch, yaw))
+      print ("Arm Joints: {%.3f,%.3f,%.3f,%.3f,%.3f,%.3f}" %(arm_joints[0], arm_joints[1], arm_joints[2], arm_joints[3], arm_joints[4], arm_joints[5]))
 
       # Loop thru each 'motion group'
       for obj, i in zip(self.yaml_obj['motion_group'], range(99)):
@@ -456,6 +459,10 @@ class RobotManipulatorControl():
 
       print(colored(" =================== All Motion Completed!  ===================", 'green'))
 
+    except IndexError as e:
+      print("Index error!!! ", e)
+      print("pls check connection and yaml file format")
+      exit(0)
     except rospy.ROSInterruptException:
       return
     except KeyboardInterrupt:

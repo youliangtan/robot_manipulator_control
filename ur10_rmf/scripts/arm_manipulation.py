@@ -414,11 +414,23 @@ class ArmManipulation(object):
     return self.wait_for_state_update(box_is_attached=False, box_is_known=False, timeout=timeout)
 
   
+  """
+  Get Eef pose
+  @Return: position.x (.y, .z), and orientation.x (.y, .z, .w)
+  if not able to get pose, will return 0 for all elements
+  """
   def get_eef_pose(self):
     return self.group.get_current_pose().pose
 
+  
+  """
+  Get arm joints
+  @Return: Float Array of 6 joint values: [j0,j1,j2,j3,j4,j5]
+  if not able to get value, will return empty array[]
+  """
   def get_arm_joints(self):
     return self.group.get_current_joint_values()
+
 
 
 
