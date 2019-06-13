@@ -34,7 +34,10 @@ from math import pi
 from std_msgs.msg import String
 from std_msgs.msg import Int32
 from std_msgs.msg import Float32MultiArray # temp solution
+
 from geometry_msgs.msg import Pose2D
+from geometry_msgs.msg import Pose
+
 # from dynamixel_gripper.msg  import grip_state
 from rm_msgs.msg import grip_state
 from rm_msgs.msg import ManipulatorState
@@ -49,7 +52,8 @@ class RobotManipulatorControl():
 
     rospy.init_node('robot_manipulator_control_node', anonymous=True)
     rospy.Subscriber("/gripper/state", grip_state, self.gripperState_callback)
-    rospy.Subscriber("/ur10/target_pose", Pose2D, self.targetPose_callback)
+    rospy.Subscriber("/ur10/target_pose_2d", Pose2D, self.targetPose_2d_callback)
+    rospy.Subscriber("/ur10/target_pose_3d", Pose, self.targetPose_3d_callback)
     rospy.Subscriber("/ur10/reset", grip_state, self.reset_callback)
     self.gripper_pub = rospy.Publisher('/gripper/command', Int32, queue_size=10)
     self.ur10 = ArmManipulation()   ## moveGroup  
@@ -87,7 +91,7 @@ class RobotManipulatorControl():
     self.motion_group_progress = 1.0
     self.is_success = True
     self.target_pose_2d =  np.array([0,0,0])   # target pose detected by 2d pose estimation topic respect to sensor pose
-
+    self.target_pose_3d =  np.array([0,0,0])
 
 
   # ***************************************************************************************************************
@@ -116,9 +120,14 @@ class RobotManipulatorControl():
     self.new_motion_request = True 
 
   # 2d pose estimation callback
-  def targetPose_callback(self, data): 
+  def targetPose_2d_callback(self, data): 
     # print(" @@@@ Pose callback:" , data)
     self.target_pose_2d =  np.array([data.x, data.y, data.theta])
+
+  # 3d position callback (x,y,z)
+  def targetPose_3d_callback(self, data): 
+    # print(" @@@@ Pose callback:" , data)
+    self.target_pose_3d =  np.array([data.position.x, data.position.y, data.position.z])
 
 
   # Timer to pub Manipulator` State in every interval
@@ -338,6 +347,13 @@ class RobotManipulatorControl():
           else:
             is_success = False
             print(" -- No Target, Skip Cartesian RePositioning, end task! ")
+
+      ## **Pose Goal Motion, 3D Pose Estimation Result: TODO
+      elif ( motion_type == '3d_dynamic_cartesian' ):
+        pass
+        #developing!!!
+        cartesian_plan, planned_fraction = self.ur10.plan_cartesian_path( [cartesian_motion], motion_time_factor, motion_type="absolute")
+
 
       ## **Close Gripper Motion
       elif ( motion_type == 'eef_grip_obj'):

@@ -55,11 +55,13 @@ def check_pose(goal, actual, tolerance=0.005):
   return True
 
 
-# Change Quaternion pose with input delta rpy
+# Change Quaternion pose with input delta rpy, BUG to be fixed
 def changeInOrientation( wpose_quaternion, delta_roll, delta_pitch, delta_yaw):
     
     if (wpose_quaternion == 0):
       qua = [0,0,0,1]
+      wpose_quaternion = geometry_msgs.msg.Quaternion()
+
     else: 
       qua = [ wpose_quaternion.x,
               wpose_quaternion.y, 
@@ -229,6 +231,7 @@ class ArmManipulation(object):
   @Param, pose_list: 6x1 list with 6 dof info of the end effector
   @Param, time_factor: float, time factor
   @Return: bool, is it success
+  # Issue is on weird motion plan in between start and goal pose, cartesian planning is recommended
   """
   def go_to_pose_goal(self, pose_list, time_factor ):
 
@@ -263,23 +266,36 @@ class ArmManipulation(object):
   Plan end effector moves in cartesian space
   @Param, motion_list: , 6dof changes of the eef relative to previous pose
   @Param, time_factor: float, time factor
+  @motion_type: absolute / relative (default)
   @Return: plan (obj, planned trajectory), fraction (float, 1.0 means all completed)
   """
-  def plan_cartesian_path(self, motion_list, time_factor):
+  def plan_cartesian_path(self, motion_list, time_factor, motion_type='relative'):
     state = self.robot.get_current_state()
     self.group.set_start_state(state)
     wpose = self.group.get_current_pose().pose
     waypoints = []
 
-    for motion_data in motion_list:
-      wpose.position.x += motion_data[0]
-      wpose.position.y += motion_data[1]
-      wpose.position.z += motion_data[2]
-      wpose.orientation = changeInOrientation(  wpose.orientation,
-                                                motion_data[3],   # roll
-                                                motion_data[4],   # pitch
-                                                motion_data[5] )  # yaw
-      waypoints.append(copy.deepcopy(wpose))
+    if (motion_type == 'absolute'): # TO BE TESTED
+      for motion_data in motion_list:
+        wpose.position.x = motion_data[0]
+        wpose.position.y = motion_data[1]
+        wpose.position.z = motion_data[2]
+        wpose.orientation = changeInOrientation( 0, motion_data[3],   # roll
+                                                    motion_data[4],   # pitch
+                                                    motion_data[5] )  # yaw
+        waypoints.append(copy.deepcopy(wpose))      
+
+    # default motion type
+    else:
+      for motion_data in motion_list:
+        wpose.position.x += motion_data[0]
+        wpose.position.y += motion_data[1]
+        wpose.position.z += motion_data[2]
+        wpose.orientation = changeInOrientation(  wpose.orientation,
+                                                  motion_data[3],   # roll
+                                                  motion_data[4],   # pitch
+                                                  motion_data[5] )  # yaw
+        waypoints.append(copy.deepcopy(wpose))
 
     (plan, fraction) = self.group.compute_cartesian_path(
                                     waypoints,   # waypoints to follow

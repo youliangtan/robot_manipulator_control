@@ -1,6 +1,8 @@
 # Robot_Manipulator_Control
 This is a developing ROS robot manipulator project, involved in using a UR10, 'self-made' dynamixel gripper. The main idea of this package is to enable fast configure on the UR10 motion sequence within in a short period of time. This is done by just edit the `motion_config.yaml` file, without changing the source code. 
 
+*3d_dynamic_cartesian planning is in the process of making!!!*
+
 ![alt text](/resources/ur10_setup.png?)
 
 Here, step-by-step instructions are listed here to guide user on how to setup the environment to: (1) Run it on Rviz  (2) Run it on a real UR10 Robot!!!!! Have fun people!!
@@ -187,8 +189,8 @@ Use `ur10.execute_motion_group_service()` to start ros service, which request gr
 #### Other Pub Sub Being used:
 - /gripper/state: gripper status (grip_state msg) **Sub**
 - /gripper/command: command gripper on ros1 (Int32) **Pub**
-- /ur10/target_pose: 2D Pose from pose estimation (Pose2D) msg  **Sub**
-
+- /ur10/target_pose_2d: 2D Pose from pose estimation (Pose2D) msg  **Sub**
+- /ur10/target_pose_3d: 3D Pose from pose estimation (Pose) msg  **Sub**
 ---
 
 ## 6. TODO <a name="6"></a>
@@ -198,3 +200,7 @@ Use `ur10.execute_motion_group_service()` to start ros service, which request gr
 - robustness
 - Adjust dynamic planning tolerance, chg to when hit limit, stop execution
 - Handle pub of `error_flag`
+- update and enhance 3d dynamic planning, with adjustment function
+
+
+
